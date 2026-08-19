@@ -1,0 +1,12 @@
+<Solution>
+  <Project Path="AiUtility.AiBaseUtilityServices/AiUtility.AiBaseUtilityServices.csproj"/>
+  <Project Path="AiUtility.ToolKits/AiUtility.ToolKits.csproj"/>
+  <Project Path="AiUtility.GeminiKits/AiUtility.GeminiKits.csproj" />
+  <Project Path="AiUtility.GeminiUtilityServices/AiUtility.GeminiUtilityServices.csproj"/>
+  <Project Path="AiUtility.GeminiKits.Tests/AiUtility.GeminiKits.Tests.csproj"/>
+  <Project Path="AiUtility.GeminiUtilityServices.Models.Tests/AiUtility.GeminiUtilityServices.Models.Tests.csproj" />
+  <Project Path="AiUtility.GeminiUtilityServices.Tests/AiUtility.GeminiUtilityServices.Tests.csproj"/>
+  <Project Path="AiUtility.ToolKits.Tests/AiUtility.ToolKits.Tests.csproj" />
+  <Project Path="AiUtilityServices.DataAnnotations.Tests/AiUtilityServices.DataAnnotations.Tests.csproj" />
+  <Project Path="AiUtilityServices.Tests/AiUtilityServices.Tests.csproj" />
+</Solution>
