@@ -1,0 +1,15 @@
+<Project>
+  <!-- 手動導入上層目錄的 props 檔案 -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <!-- 停用新測試平台執行器 -->
+    <EnableMicrosoftTestingPlatformRunner>false</EnableMicrosoftTestingPlatformRunner>
+    <!-- 停用 SDK 自動注入的測試平台功能 -->
+    <EnableMicrosoftTestingPlatform>false</EnableMicrosoftTestingPlatform>
+    <!-- 忽略 VSTest 的不支援錯誤 -->
+    <SuppressTestingPlatformLegacySupportError>true</SuppressTestingPlatformLegacySupportError>
+    <!-- 啟動的自定義 MTP 邏輯 -->
+    <EnableMtpTests>true</EnableMtpTests>
+  </PropertyGroup>
+</Project>
