@@ -26,3 +26,7 @@ Utility base class of API of AI model.
 ## 4.0.0-preview-1.0.0
 ### Major Updates
 + Remove unneccesary proerties (e.g. `ConfigPath` in `AiBaseAbstractService`)
+
+## 4.0.0-preview-1.0.1
+### Major Updates
++ recompile the file and repack the utility packages
