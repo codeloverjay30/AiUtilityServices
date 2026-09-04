@@ -30,3 +30,11 @@ Utility base class of API of AI model.
 ## 4.0.0-preview-1.0.1
 ### Major Updates
 + recompile the file and repack the utility packages
+
+## 4.1.0-preview-1.0.0
+### Added
++ Add `GeminiToolExecutor` executor as adapter.
+
+## 4.1.1-preview-1.0.0
+### Fixed
++ 0 應該是合法的初始 token state
