@@ -19,11 +19,11 @@ namespace AiUtility.Configurations.Tests
     public class GeminiApiClientTests
     {
         private static readonly JsonSerializerOptions _options = AiUtility.Common.Options.JsonOptions.DefaultOptions;
-           
-        private readonly string _configPath = @"D:\workspace\utility_packages\AiModels\AiUtilityServices\AiUtilityServices.Tests\secure.config.json5";
+
+        private const string TestApiKey = "gen-lang-client-0455493629s";
+
         private Mock<ILoggerFactoryBaseUtilityService> _mockLoggerFactory;
         private Mock<ILogger<GeminiApiClient>> _mockLogger;
-        public ApiKeyConfig ApiKeyConfiguration { get; set; }
 
         [SetUp]
         public void Setup()
@@ -35,13 +35,7 @@ namespace AiUtility.Configurations.Tests
                 .Setup(x => x.LoggerFactory.CreateLogger(It.IsAny<string>()))
                 .Returns(_mockLogger.Object);
 
-            ReadConfig();
-        }
 
-        public void ReadConfig()
-        {
-            var aiBaseUtilityService = new AiConfigService{ AiConfigPath = _configPath };
-            ApiKeyConfiguration = aiBaseUtilityService.GetApiKeyConfig();
         }
 
         [Test]
@@ -97,7 +91,7 @@ namespace AiUtility.Configurations.Tests
             var client = new GeminiApiClient(_mockLoggerFactory.Object , toLogWhenSuccess: false)
             {
                 HttpClient = httpClient ,
-                ApiKey = ApiKeyConfiguration.API_KEY
+                ApiKey = TestApiKey
             };
 
             var request = new GeminiGenerateRequest();
@@ -121,7 +115,7 @@ namespace AiUtility.Configurations.Tests
                Times.Exactly(1) ,
                ItExpr.Is<HttpRequestMessage>(req =>
                   req.Method == HttpMethod.Post &&
-                  req.RequestUri.Query.Contains($"key={ApiKeyConfiguration.API_KEY}")) ,
+                  req.RequestUri.Query.Contains($"key={TestApiKey}")) ,
                ItExpr.IsAny<CancellationToken>()
             );
         }
@@ -147,7 +141,7 @@ namespace AiUtility.Configurations.Tests
             var client = new GeminiApiClient(_mockLoggerFactory.Object , false)
             {
                 HttpClient = new HttpClient(handlerMock.Object) ,
-                ApiKey = ApiKeyConfiguration.API_KEY
+                ApiKey = TestApiKey
             };
 
             var request = new GeminiGenerateRequest();
