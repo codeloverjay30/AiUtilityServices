@@ -528,60 +528,113 @@ namespace AiUtility.GeminiUtilityServices.Models
         }
 
         /// <summary>
-        /// Compress the response except for the last n response where n is <see cref="AiExecutionSettings.LastTokenCountNeededToBeKept"/> of <paramref name="settings"/> and summarize it
-        /// then concatenate them and the last 5 response
-        /// to consolidate the memory.
+        /// Consolidates conversation memory when the current token usage reaches
+        /// the configured threshold.
         /// </summary>
-        /// <param name="client"><seealso cref="IGeminiApiClient"/></param>
-        /// <param name="currentTotalTokens">current used token</param>
-        /// <param name="settings"><seealso cref="AiExecutionSettings"/></param>
-        /// <returns></returns>
+        /// <param name="client">
+        /// The Gemini API client used to generate the milestone summary.
+        /// </param>
+        /// <param name="currentTotalTokens">
+        /// The currently known total token count. Zero represents an initial
+        /// conversation state before token usage has been reported.
+        /// </param>
+        /// <param name="settings">
+        /// The execution settings controlling memory consolidation.
+        /// </param>
+        /// <returns>
+        /// A task representing the asynchronous consolidation operation.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when a required dependency is null.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown when token usage is negative or a required execution setting
+        /// is outside its valid range.
+        /// </exception>
         public async Task ConsolidateMemoryAsync(
             IGeminiApiClient client,
-            int currentTotalTokens ,
-            AiExecutionSettings settings
-        )
+            int currentTotalTokens,
+            AiExecutionSettings settings)
         {
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(currentTotalTokens,nameof(currentTotalTokens));
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(settings.Threshold,nameof(settings.Threshold));
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(settings.LastTokenCountNeededToBeKept,nameof(settings.LastTokenCountNeededToBeKept));
-            // 如果對話太短則不處理
-            if(currentTotalTokens < settings.Threshold)
+            ArgumentNullException.ThrowIfNull(client);
+            ArgumentNullException.ThrowIfNull(settings);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(
+                currentTotalTokens,
+                nameof(currentTotalTokens));
+
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(
+                settings.Threshold,
+                nameof(settings.Threshold));
+
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(
+                settings.LastTokenCountNeededToBeKept,
+                nameof(settings.LastTokenCountNeededToBeKept));
+
+            if (currentTotalTokens < settings.Threshold)
             {
                 return;
             }
 
-            // 分離記憶
-            var workingMemory = this.Contents.TakeLast(settings.LastTokenCountNeededToBeKept).ToList(); // 保留最後 n 輪
-            var historicalData = this.Contents.SkipLast(settings.LastTokenCountNeededToBeKept).ToList(); // 準備壓縮的舊資料
+            var workingMemory =
+                Contents
+                    .TakeLast(settings.LastTokenCountNeededToBeKept)
+                    .ToList();
 
-            // 產生摘要 (Long-term Milestone)
-            var summaryRequest = new GeminiGenerateRequest();
-            summaryRequest.Contents.AddRange(historicalData);
-            summaryRequest.AddUserMessage(AiUtility.AiBaseUtilityServices.Consts.Constants.AiTasks.Consolidations.SUMMARIZE_MILESTONE_TO_SAVE_SPACE.AsMemory());
+            var historicalData =
+                Contents
+                    .SkipLast(settings.LastTokenCountNeededToBeKept)
+                    .ToList();
 
-            var response = await client.GenerateContentAsync(summaryRequest);
-            var milestoneSummary = (response.Candidates [ 0 ].Content.Parts [ 0 ] as GeminiPart)?.RawText ?? ReadOnlyMemory<char>.Empty;
+            var summaryRequest =
+                new GeminiGenerateRequest();
 
-            // 重組內容
-            this.Contents.Clear();
+            summaryRequest.Contents.AddRange(
+                historicalData);
 
-            // 插入長期記憶
-            this.AddUserMessage(
-                _stringFormmattingUtilityService.FormatWithMemoryAsReadOnlySpanOfChar(
-                    AiUtility.AiBaseUtilityServices.Consts.Constants.AiTasks.Remembers.REVIEW_TASKS_AND_MILESTONE_FORMAT, milestoneSummary
-            ));
+            summaryRequest.AddUserMessage(
+                AiUtility.AiBaseUtilityServices.Consts.Constants
+                    .AiTasks.Consolidations
+                    .SUMMARIZE_MILESTONE_TO_SAVE_SPACE
+                    .AsMemory());
 
-            // 接回短期記憶
-            this.Contents.AddRange(workingMemory);
+            var response =
+                await client.GenerateContentAsync(
+                    summaryRequest);
+
+            var milestoneSummary =
+                response.Candidates
+                    .FirstOrDefault()?
+                    .Content?
+                    .Parts
+                    .OfType<GeminiPart>()
+                    .FirstOrDefault()?
+                    .RawText
+                ?? ReadOnlyMemory<char>.Empty;
+
+            Contents.Clear();
+
+            AddUserMessage(
+                _stringFormmattingUtilityService
+                    .FormatWithMemoryAsReadOnlySpanOfChar(
+                        AiUtility.AiBaseUtilityServices.Consts.Constants
+                            .AiTasks.Remembers
+                            .REVIEW_TASKS_AND_MILESTONE_FORMAT,
+                        milestoneSummary));
+
+            Contents.AddRange(
+                workingMemory);
         }
+
         public async Task<GeminiGenerateRequest> WithConsolidateMemoryAsync(
             IGeminiApiClient client,
             int currentTotalTokens ,
             AiExecutionSettings settings
         )
         {
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(currentTotalTokens,nameof(currentTotalTokens));
+            ArgumentNullException.ThrowIfNull(client);
+            ArgumentNullException.ThrowIfNull(settings);
+            ArgumentOutOfRangeException.ThrowIfNegative(currentTotalTokens,nameof(currentTotalTokens));
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(settings.Threshold,nameof(settings.Threshold));
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(settings.LastTokenCountNeededToBeKept,nameof(settings.LastTokenCountNeededToBeKept));
             // 如果對話太短則不處理
