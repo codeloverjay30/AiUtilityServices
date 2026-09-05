@@ -19,6 +19,7 @@ using System.Reflection.Metadata;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using AiUtility.GeminiUtilityServices.Configs;
 
 namespace AiUtility.GeminiUtilityServices.Services
 {
@@ -38,7 +39,23 @@ namespace AiUtility.GeminiUtilityServices.Services
         static partial void LogExcpetionWhenGeneratingContent(ILogger logger, string ErrorDescription, string ErrorMessage);
         public required HttpClient HttpClient { get; init; }
         public required string ApiKey { get; init; } = string.Empty;
-        public string BaseUrl => "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+        public required GeminiApiOptions ApiOptions { get; init; }
+
+        public string BaseUrl
+        {
+            get
+            {
+                ArgumentNullException.ThrowIfNull(ApiOptions);
+                ArgumentException.ThrowIfNullOrWhiteSpace(ApiOptions.Model);
+                ArgumentException.ThrowIfNullOrWhiteSpace(ApiOptions.ApiVersion);
+
+                return new Uri(
+                    ApiOptions.BaseAddress,
+                    $"{ApiOptions.ApiVersion}/models/{Uri.EscapeDataString(ApiOptions.Model)}:generateContent")
+                    .AbsoluteUri;
+            }
+        }
+
         public string RequestUrl => $"{BaseUrl}?key={ApiKey}";
 
         /// <summary>
