@@ -1,4 +1,5 @@
 ﻿using AiUtility.AiBaseUtilityServices.Services;
+using AiUtility.GeminiUtilityServices.Configs;
 using AiUtility.GeminiUtilityServices.Models;
 using AiUtility.GeminiUtilityServices.Services;
 using LoggerFactoryUtilityServices;
@@ -90,8 +91,12 @@ namespace AiUtility.Configurations.Tests
   
             var client = new GeminiApiClient(_mockLoggerFactory.Object , toLogWhenSuccess: false)
             {
-                HttpClient = httpClient ,
-                ApiKey = TestApiKey
+                HttpClient = httpClient,
+                ApiKey = TestApiKey,
+                ApiOptions = new GeminiApiOptions
+                {
+                    Model = "gemini-test-model",
+                },
             };
 
             var request = new GeminiGenerateRequest();
@@ -140,8 +145,12 @@ namespace AiUtility.Configurations.Tests
 
             var client = new GeminiApiClient(_mockLoggerFactory.Object , false)
             {
-                HttpClient = new HttpClient(handlerMock.Object) ,
-                ApiKey = TestApiKey
+                HttpClient = new HttpClient(handlerMock.Object),
+                ApiKey = TestApiKey,
+                ApiOptions = new GeminiApiOptions
+                {
+                    Model = "gemini-test-model",
+                },
             };
 
             var request = new GeminiGenerateRequest();
