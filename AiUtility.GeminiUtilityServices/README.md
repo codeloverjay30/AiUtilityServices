@@ -106,3 +106,7 @@ and convert `ReadyOnlyMemory<byte>` instance to `string` (and vice versa).
 ## 4.1.1-preview-1.0.0
 ### Fixed
 + 0 應該是合法的初始 token state
+
+## 4.2.0-preview-1.0.0
+### Fixed
++ 不應硬編碼使用的Gems Flash模型版本
