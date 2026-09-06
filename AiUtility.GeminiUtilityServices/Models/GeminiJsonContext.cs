@@ -1,19 +1,14 @@
-﻿using AiUtility.Common.Options;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Metadata;
+﻿using System.Text.Json.Serialization;
 
-namespace AiUtility.GeminiUtilityServices.Models
+namespace AiUtility.GeminiUtilityServices.Models;
+
+/// <summary>
+/// Provides source-generated JSON metadata for Gemini API models.
+/// </summary>
+[JsonSerializable(typeof(GeminiGenerateRequest))]
+[JsonSerializable(typeof(GeminiResponse))]
+[JsonSerializable(typeof(GeminiPart))]
+[JsonSerializable(typeof(Dictionary<string, object>))]
+public partial class GeminiJsonContext : JsonSerializerContext
 {
-    [JsonSerializable(typeof(GeminiGenerateRequest))]
-    [JsonSerializable(typeof(GeminiResponse))]
-    [JsonSerializable(typeof(GeminiPart))]
-    [JsonSerializable(typeof(Dictionary<string , object>))] // 若需要處理動態物件，需加入此行
-    public partial class GeminiJsonContext : JsonSerializerContext
-    {
-        
-    }
 }
