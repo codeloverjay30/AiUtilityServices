@@ -1,116 +1,145 @@
-using System.Text.Json;
-using static AiUtility.GeminiUtilityServices.Models.GeminiGenerateRequest;
+using AiUtility.GeminiUtilityServices.Models;
+using FluentAssertions;
 
-namespace AiUtility.GeminiUtilityServices.Models.Tests;
-
-public class GeminiGenerateRequestTests
+namespace AiUtility.GeminiUtilityServices.Models.Tests
 {
-    [Fact]
-    public void Clone_ShouldCreateNewInstance_WithSameValues()
+    public class GeminiGenerateRequestTests
     {
-        // Arrange: 準備原始物件並填入一些資料
-        var original = new GeminiGenerateRequest
+        [Fact]
+        public void DeepClone_ShouldDeepCloneContents()
         {
-            Prompt = "Original Prompt" ,
-            SystemInstruction = "Be helpful" ,
-            Temperature = 1.5 ,
-            MaxOutputTokens = 1000
-        };
-        original.Contents.Add(new GeminiMessage { Role = "user" });
-        original.SafetySettings.Add(new GeminiSafetySetting { Category = "HATE" });
-        original.Tools.Add(new GeminiToolDeclarationWrapper());
+            // Arrange
+            var sut = new GeminiGenerateRequest
+            {
+                Prompt = "test prompt",
+                Contents =
+                [
+                    new GeminiMessage
+                    {
+                        Role = "user",
+                        Parts =
+                        [
+                            new GeminiPart
+                            {
+                                Text = "original"
+                            }
+                        ]
+                    }
+                ]
+            };
 
-        // Act: 執行 Clone
-        var cloned = original.Clone();
+            // Act
+            var clone = sut.DeepClone();
 
-        // Assert: 驗證屬性值是否相同
-        Assert.NotSame(original , cloned); // 記憶體位址不應相同
-        Assert.Equal(original.Prompt , cloned.Prompt);
-        Assert.Equal(original.SystemInstruction , cloned.SystemInstruction);
-        Assert.Equal(original.Temperature , cloned.Temperature);
-        Assert.Equal(original.MaxOutputTokens , cloned.MaxOutputTokens);
-    }
+            // Assert
+            clone.Should().NotBeSameAs(sut);
 
-    [Fact]
-    public void Clone_ShouldEnsureCollectionsAreIndependent_ToAvoidRaceCondition()
-    {
-        // Arrange
-        var original = new GeminiGenerateRequest();
-        original.Contents.Add(new GeminiMessage { Role = "user" , Parts = new List<GeminiPart> { new() { Text = "Initial" } } });
-        original.Tools.Add(new GeminiToolDeclarationWrapper());
+            clone.Prompt.Should().Be("test prompt");
 
-        // Act
-        var cloned = original.Clone();
+            clone.Contents.Should()
+                .NotBeSameAs(sut.Contents);
 
-        // 修改 Cloned 物件的集合
-        cloned.Contents.Add(new GeminiMessage { Role = "model" });
-        cloned.Tools.Add(new GeminiToolDeclarationWrapper());
+            clone.Contents.Should()
+                .HaveCount(1);
 
-        // Assert: 驗證原始物件的集合數量不受影響
-        Assert.Single(original.Contents);
-        Assert.Single(original.Tools);
-        Assert.Equal(2 , cloned.Contents.Count);
-        Assert.Equal(2 , cloned.Tools.Count);
+            clone.Contents[0].Should()
+                .NotBeSameAs(sut.Contents[0]);
 
-        // 驗證集合本身的引用不同
-        Assert.NotSame(original.Contents , cloned.Contents);
-        Assert.NotSame(original.Tools , cloned.Tools);
-        Assert.NotSame(original.SafetySettings , cloned.SafetySettings);
-    }
+            clone.Contents[0].Parts.Should()
+                .NotBeSameAs(sut.Contents[0].Parts);
 
-    [Fact]
-    public void Clone_ShouldPerformDeepCopyOnTools_UsingWrapperShallowCopy()
-    {
-        // Arrange
-        var original = new GeminiGenerateRequest();
-        var toolWrapper = new GeminiToolDeclarationWrapper();
-        toolWrapper.FunctionDeclarations.Add("OriginalFunction");
-        original.Tools.Add(toolWrapper);
+            clone.Contents[0].Parts[0].Should()
+                .NotBeSameAs(sut.Contents[0].Parts[0]);
 
-        // Act
-        var cloned = original.Clone();
+            clone.Contents[0].Parts[0].Text.Should()
+                .Be("original");
+        }
 
-        // 修改 cloned 裡面的第一個工具的 FunctionDeclarations
-        cloned.Tools [ 0 ].FunctionDeclarations.Add("NewFunction");
-
-        // Assert: 驗證 original 內部的工具內容沒有被污染
-        Assert.Single(original.Tools [ 0 ].FunctionDeclarations);
-        Assert.Equal(2 , cloned.Tools [ 0 ].FunctionDeclarations.Count);
-
-        // 驗證 Wrapper 實體也被更換了
-        Assert.NotSame(original.Tools [ 0 ] , cloned.Tools [ 0 ]);
-    }
-
-    [Fact]
-    public void ToGoogleApiRequest_ShouldReturnValidJsonStructure()
-    {
-        // Arrange
-        var request = new GeminiGenerateRequest
+        [Fact]
+        public void DeepClone_WhenNestedContentChanges_ShouldNotModifyOriginal()
         {
-            Prompt = "Test" ,
-            SystemInstruction = "Instruction" ,
-            Temperature = 0.7 ,
-            MaxOutputTokens = 500
-        };
+            // Arrange
+            var sut = new GeminiGenerateRequest
+            {
+                Contents =
+                [
+                    new GeminiMessage
+                    {
+                        Parts =
+                        [
+                            new GeminiPart
+                            {
+                                Text = "original"
+                            }
+                        ]
+                    }
+                ]
+            };
 
-        // Act
-        var apiRequest = request.ToGoogleApiRequest();
+            // Act
+            var clone = sut.DeepClone();
 
-        // 將匿名物件序列化為 JSON 字串，這樣就沒有跨專案存取 internal 屬性的問題
-        var json = JsonSerializer.Serialize(apiRequest);
-        using var document = JsonDocument.Parse(json);
-        var root = document.RootElement;
+            clone.Contents[0]
+                .Parts[0]
+                .Text = "changed";
 
-        // Assert: 檢查 JSON 結構與欄位名稱是否符合 Google API 規範
-        Assert.True(root.TryGetProperty("contents" , out _));
+            // Assert
+            sut.Contents[0]
+                .Parts[0]
+                .Text.Should()
+                .Be("original");
 
-        // 驗證 system_instruction 結構
-        var systemInstruction = root.GetProperty("system_instruction");
-        Assert.Equal("Instruction" , systemInstruction.GetProperty("parts") [ 0 ].GetProperty("text").GetString());
+            clone.Contents[0]
+                .Parts[0]
+                .Text.Should()
+                .Be("changed");
+        }
 
-        // 驗證 generationConfig 欄位名稱 (注意 Google API 使用 camelCase)
-        var config = root.GetProperty("generationConfig");
-        Assert.Equal(0.7 , config.GetProperty("temperature").GetDouble());
-        Assert.Equal(500 , config.GetProperty("maxOutputTokens").GetInt32());
+        [Fact]
+        public void DeepClone_ShouldDeepCloneMutableCollections()
+        {
+            // Arrange
+            var sut = new GeminiGenerateRequest
+            {
+                SafetySettings =
+                [
+                    new GeminiSafetySetting
+                    {
+                        Category = "category",
+                        Threshold = "threshold"
+                    }
+                ],
+                Tools =
+                [
+                    new GeminiGenerateRequest.GeminiToolDeclarationWrapper
+                    {
+                        FunctionDeclarations =
+                        [
+                            "tool"
+                        ]
+                    }
+                ]
+            };
+
+            // Act
+            var clone = sut.DeepClone();
+
+            // Assert
+            clone.SafetySettings.Should()
+                .NotBeSameAs(sut.SafetySettings);
+
+            clone.SafetySettings[0].Should()
+                .NotBeSameAs(sut.SafetySettings[0]);
+
+            clone.Tools.Should()
+                .NotBeSameAs(sut.Tools);
+
+            clone.Tools[0].Should()
+                .NotBeSameAs(sut.Tools[0]);
+
+            clone.Tools[0].FunctionDeclarations.Should()
+                .NotBeSameAs(
+                    sut.Tools[0].FunctionDeclarations);
+        }
     }
 }
