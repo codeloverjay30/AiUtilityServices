@@ -118,3 +118,10 @@ and convert `ReadyOnlyMemory<byte>` instance to `string` (and vice versa).
 ## 4.4.0-preview-1.0.0
 ### Fixed
 + 修改Gemini API Restful Schema
+
+## 5.0.0-preview-1.0.0
+### Fixed
++ 修改Gemini API Restful Schema
+
+### Major Updates
++ 抽離Gemini API Restful Schema
