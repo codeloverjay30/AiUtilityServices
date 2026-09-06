@@ -110,3 +110,11 @@ and convert `ReadyOnlyMemory<byte>` instance to `string` (and vice versa).
 ## 4.2.0-preview-1.0.0
 ### Fixed
 + 不應硬編碼使用的Gems Flash模型版本
+
+## 4.3.0-preview-1.0.0
+### Fixed
++ 修改Gemini API Restful Schema
+
+## 4.4.0-preview-1.0.0
+### Fixed
++ 修改Gemini API Restful Schema
