@@ -58,7 +58,7 @@ namespace AiUtility.GeminiUtilityServices.Models
             [JsonPropertyName("function_declarations")]
             public List<object> FunctionDeclarations { get; set; } = new();
 
-            public GeminiToolDeclarationWrapper Clone()
+            public GeminiToolDeclarationWrapper DeepClone()
             {
                 var clone = (GeminiToolDeclarationWrapper)this.MemberwiseClone();
                 clone.FunctionDeclarations = new List<object>(this.FunctionDeclarations);
@@ -115,7 +115,7 @@ namespace AiUtility.GeminiUtilityServices.Models
             GeminiMessage message
         )
         {
-            var clone = this.Clone();
+            var clone = this.DeepClone();
             clone.Contents.Add(message);
             return clone;
         }
@@ -245,7 +245,7 @@ namespace AiUtility.GeminiUtilityServices.Models
             string mimeType = MimeTypes.MimeTypeConstants.IMAGE_PNG // "image/png"
         )
         {
-            var clone = this.Clone();
+            var clone = this.DeepClone();
             var parts = new List<GeminiPart>();
 
             // 直接實例化明確型別 GeminiPart，不再使用匿名物件
@@ -298,7 +298,7 @@ namespace AiUtility.GeminiUtilityServices.Models
             string mimeType = MimeTypes.MimeTypeConstants.IMAGE_PNG // "image/png"
         )
         {
-            var clone = this.Clone();
+            var clone = this.DeepClone();
             var parts = new List<GeminiPart>();
 
             // 直接實例化明確型別 GeminiPart，不再使用匿名物件
@@ -409,7 +409,7 @@ namespace AiUtility.GeminiUtilityServices.Models
             string aiResponse
         )
         {
-            var clone = this.Clone(); // 取得深層複製的副本
+            var clone = this.DeepClone(); // 取得深層複製的副本
 
             var message = new GeminiMessage
             {
@@ -442,7 +442,7 @@ namespace AiUtility.GeminiUtilityServices.Models
             ReadOnlyMemory<char> aiResponse
         )
         {
-            var clone = this.Clone(); // 取得深層複製的副本
+            var clone = this.DeepClone(); // 取得深層複製的副本
 
             var message = new GeminiMessage
             {
@@ -504,7 +504,7 @@ namespace AiUtility.GeminiUtilityServices.Models
         {
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(keepLastNImages,nameof(keepLastNImages));
 
-            var clone = this.Clone();
+            var clone = this.DeepClone();
             int imageCount = 0;
             for(int i = clone.Contents.Count - 1; i >= 0; i--)
             {
@@ -643,7 +643,7 @@ namespace AiUtility.GeminiUtilityServices.Models
                 return this;
             }
 
-            var clone = this.Clone();
+            var clone = this.DeepClone();
             // 分離記憶
             var workingMemory = clone.Contents.TakeLast(settings.LastTokenCountNeededToBeKept).ToList(); // 保留最後 n 輪
             var historicalData = clone.Contents.SkipLast(settings.LastTokenCountNeededToBeKept).ToList(); // 準備壓縮的舊資料
@@ -694,16 +694,32 @@ namespace AiUtility.GeminiUtilityServices.Models
                 }
             };
         }
-        public GeminiGenerateRequest Clone()
+        /// <summary>
+        /// Creates a deep copy of the current Gemini generation request.
+        /// </summary>
+        /// <returns>
+        /// A new <see cref="GeminiGenerateRequest"/> containing independent
+        /// copies of mutable nested objects and collections.
+        /// </returns>
+        public GeminiGenerateRequest DeepClone()
         {
-            // 1. 利用 MemberwiseClone 快速複製所有屬性 (包含 Prompt, Config 等)
-            var clone = (GeminiGenerateRequest)this.MemberwiseClone();
+            var clone =
+                (GeminiGenerateRequest)MemberwiseClone();
 
-            // 2. 針對「會變動」的集合進行重新分配，避免 Race Condition
-            // 雖然這裡有分配，但比起重新 new 整個複雜物件，開銷極小
-            clone.Contents = this.Contents.Select(t => t.Clone()).ToList();
-            clone.SafetySettings = new List<GeminiSafetySetting>(this.SafetySettings);
-            clone.Tools = this.Tools.Select(t => t.Clone()).ToList();
+            clone.Contents =
+                Contents
+                    .Select(message => message.DeepClone())
+                    .ToList();
+
+            clone.SafetySettings =
+                SafetySettings
+                    .Select(setting => setting.DeepClone())
+                    .ToList();
+
+            clone.Tools =
+                Tools
+                    .Select(tool => tool.DeepClone())
+                    .ToList();
 
             return clone;
         }

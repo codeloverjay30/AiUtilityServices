@@ -36,14 +36,23 @@ namespace AiUtility.GeminiUtilityServices.Models
         [System.Text.Json.Serialization.JsonPropertyName("usageMetadata")]
         public GeminiUsageMetadata? UsageMetadata { get; set; }
 
+        /// <summary>
+        /// Creates a deep copy of the current Gemini response.
+        /// </summary>
+        /// <returns>
+        /// A new <see cref="GeminiResponse"/> containing independent candidate
+        /// and usage metadata instances.
+        /// </returns>
         public GeminiResponse DeepClone()
         {
-            ArgumentNullException.ThrowIfNull(this);
-            var clone = new GeminiResponse
+            return new GeminiResponse
             {
-                Candidates = this.Candidates.Select(t=>t.Clone()).ToList(),
+                Candidates = Candidates
+                    .Select(candidate => candidate.DeepClone())
+                    .ToList(),
+
+                UsageMetadata = UsageMetadata?.DeepCopy()
             };
-            return clone;
         }
     }
 }
