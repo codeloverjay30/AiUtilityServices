@@ -20,19 +20,19 @@ internal sealed class GeminiUsageMetadataDto
     public List<GeminiTokenDetailDto> PromptTokensDetails { get; init; } = [];
 
     /// <summary>
-    /// Gets or initializes candidate token count.
+    /// Gets or initializes the generated candidate token count.
     /// </summary>
     [JsonPropertyName("candidatesTokenCount")]
     public int CandidatesTokenCount { get; init; }
 
     /// <summary>
-    /// Gets or initializes candidate token details.
+    /// Gets or initializes generated candidate token details.
     /// </summary>
     [JsonPropertyName("candidatesTokensDetails")]
     public List<GeminiTokenDetailDto> CandidatesTokensDetails { get; init; } = [];
 
     /// <summary>
-    /// Gets or initializes cached-content token count.
+    /// Gets or initializes the cached-content token count.
     /// </summary>
     [JsonPropertyName("cachedContentTokenCount")]
     public int CachedContentTokenCount { get; init; }
@@ -44,7 +44,19 @@ internal sealed class GeminiUsageMetadataDto
     public List<GeminiTokenDetailDto> CacheTokensDetails { get; init; } = [];
 
     /// <summary>
-    /// Gets or initializes thinking token count.
+    /// Gets or initializes the token count used for tool-use prompts.
+    /// </summary>
+    [JsonPropertyName("toolUsePromptTokenCount")]
+    public int ToolUsePromptTokenCount { get; init; }
+
+    /// <summary>
+    /// Gets or initializes token details used for tool-use prompts.
+    /// </summary>
+    [JsonPropertyName("toolUsePromptTokensDetails")]
+    public List<GeminiTokenDetailDto> ToolUsePromptTokensDetails { get; init; } = [];
+
+    /// <summary>
+    /// Gets or initializes the number of tokens consumed by model thinking.
     /// </summary>
     [JsonPropertyName("thoughtsTokenCount")]
     public int ThoughtsTokenCount { get; init; }
@@ -54,4 +66,10 @@ internal sealed class GeminiUsageMetadataDto
     /// </summary>
     [JsonPropertyName("totalTokenCount")]
     public int TotalTokenCount { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the service tier used to process the request.
+    /// </summary>
+    [JsonPropertyName("serviceTier")]
+    public string? ServiceTier { get; init; }
 }

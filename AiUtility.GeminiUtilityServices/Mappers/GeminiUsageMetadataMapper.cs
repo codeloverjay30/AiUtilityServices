@@ -36,8 +36,13 @@ internal static class GeminiUsageMetadataMapper
                 source.CachedContentTokenCount,
                 source.CacheTokensDetails),
 
+            ToolUsePrompt = CreateUsage(
+                source.ToolUsePromptTokenCount,
+                source.ToolUsePromptTokensDetails),
+
             ThoughtsTokenCount = source.ThoughtsTokenCount,
-            TotalTokenCount = source.TotalTokenCount
+            TotalTokenCount = source.TotalTokenCount,
+            ServiceTier = source.ServiceTier
         };
     }
 
