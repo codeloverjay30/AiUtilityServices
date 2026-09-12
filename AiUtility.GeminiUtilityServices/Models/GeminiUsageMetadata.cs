@@ -25,6 +25,11 @@ public sealed class GeminiUsageMetadata
     public GeminiTokenUsage Cache { get; init; } = new();
 
     /// <summary>
+    /// Gets or initializes token usage associated with tool-use prompts.
+    /// </summary>
+    public GeminiTokenUsage ToolUsePrompt { get; init; } = new();
+
+    /// <summary>
     /// Gets or initializes the number of tokens consumed by model thinking.
     /// </summary>
     public int ThoughtsTokenCount { get; init; }
@@ -33,6 +38,11 @@ public sealed class GeminiUsageMetadata
     /// Gets or initializes the total number of tokens consumed by the request.
     /// </summary>
     public int TotalTokenCount { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the service tier used to process the request.
+    /// </summary>
+    public string? ServiceTier { get; init; }
 
     /// <summary>
     /// Creates a deep copy of the current usage metadata.
@@ -47,8 +57,10 @@ public sealed class GeminiUsageMetadata
             Prompt = Prompt.DeepClone(),
             Candidates = Candidates.DeepClone(),
             Cache = Cache.DeepClone(),
+            ToolUsePrompt = ToolUsePrompt.DeepClone(),
             ThoughtsTokenCount = ThoughtsTokenCount,
-            TotalTokenCount = TotalTokenCount
+            TotalTokenCount = TotalTokenCount,
+            ServiceTier = ServiceTier
         };
     }
 }
