@@ -320,6 +320,7 @@ namespace AiUtility.GeminiKits.Tests
                     [
                         "MethodWithGeminiAttribute",
                         "AddNumbers",
+                        "Wait",
                         "GetStatus",
                         "GetAnswer",
                     ]);
