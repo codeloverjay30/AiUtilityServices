@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace AiUtility.AiBaseUtilityServices.Models
 {
@@ -38,6 +36,20 @@ namespace AiUtility.AiBaseUtilityServices.Models
         /// The default format
         /// </summary>
         public virtual string Formatting => "[{0}%] Step {1}/{2}: {3}";
-        public override string ToString() => string.Format(Formatting , Percentage , CurrentStep , MaxSteps);
+        /// <summary>
+        /// Returns the formatted workflow progress description.
+        /// </summary>
+        /// <returns>
+        /// A formatted representation of the current workflow progress.
+        /// </returns>
+        public override string ToString()
+        {
+            return string.Format(
+                Formatting,
+                Percentage,
+                CurrentStep,
+                MaxSteps,
+                CurrentAction);
+        }
     }
 }
