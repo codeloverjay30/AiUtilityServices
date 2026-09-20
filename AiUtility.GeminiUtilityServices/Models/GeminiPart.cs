@@ -35,7 +35,7 @@ namespace AiUtility.GeminiUtilityServices.Models
         /// <summary>
         /// Gets or sets a function call emitted by the model.
         /// </summary>
-        [JsonPropertyName("function_call")]
+        [JsonPropertyName("functionCall")]
         public GeminiFunctionCall? FunctionCall { get; set; }
 
         /// <summary>
