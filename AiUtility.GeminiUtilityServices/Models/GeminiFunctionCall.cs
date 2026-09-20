@@ -1,11 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace AiUtility.GeminiUtilityServices.Models
 {
     public class GeminiFunctionCall
     {
+        /// <summary>
+        /// Gets or sets the identifier assigned to the function call.
+        /// </summary>
+        [JsonPropertyName("id")]
+        public string? Id { get; set; }
+
         [System.Text.Json.Serialization.JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
 
@@ -17,7 +24,8 @@ namespace AiUtility.GeminiUtilityServices.Models
             ArgumentNullException.ThrowIfNull(this);
             var clone = new GeminiFunctionCall
             {
-                Name = Name ,
+                Id = Id,
+                Name = Name,
                 Args = this.Args?.ToDictionary(
                     entry => entry.Key ,
                     entry => entry.Value.Clone()
