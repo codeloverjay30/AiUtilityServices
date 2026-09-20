@@ -25,13 +25,15 @@ namespace AiUtility.GeminiUtilityServices.Services
 {
     public partial class GeminiApiClient(
         ILoggerFactoryBaseUtilityService loggerFactoryService,
-        bool toLogWhenSuccess
+        bool toLogWhenSuccess,
+        JsonSerializerOptions? jsonOptions = null
     ):AiBaseAbstractService(
         loggerFactoryService,
         toLogWhenSuccess
     ), IGeminiApiClient
     {
-        private readonly JsonSerializerOptions _options = AiUtility.Common.Options.JsonOptions.DefaultOptions;
+        private readonly JsonSerializerOptions _options =
+            jsonOptions ?? AiUtility.Common.Options.JsonOptions.DefaultOptions;
 
         private ILogger _logger => _loggerFactoryService.Logger;
 
