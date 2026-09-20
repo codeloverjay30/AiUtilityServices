@@ -98,8 +98,27 @@ public abstract class AiToolExecutorBase<TMetadata, TAttribute>
                 arguments,
                 ct);
 
-        var instance =
-            metadata.InstanceFactory?.Invoke();
+        object? instance = null;
+
+        if (!metadata.MethodInfo.IsStatic)
+        {
+            if (metadata.InstanceFactory is null)
+            {
+                throw new InvalidOperationException(
+                    $"Tool '{metadata.FunctionName}' is an instance method, " +
+                    "but no instance factory is configured.");
+            }
+
+            instance =
+                metadata.InstanceFactory();
+
+            if (instance is null)
+            {
+                throw new InvalidOperationException(
+                    $"The instance factory for tool " +
+                    $"'{metadata.FunctionName}' returned null.");
+            }
+        }
 
         var result =
             metadata.FastInvoke(
