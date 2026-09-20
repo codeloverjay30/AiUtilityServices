@@ -19,6 +19,12 @@ namespace AiUtility.ToolKits.Services
         where TParameters : AiParametersBase, new()
         where TProperty : AiParameterPropertyBase, new()
     {
+        /// <summary>
+        /// Gets the default description used for tool parameters.
+        /// </summary>
+        protected string DefaultParameterDescription =>
+            defaultParameterDescription;
+
         public virtual TDeclaration ToToolDeclaration(ToolMetadataBase metadata)
         {
             var toolAttr = metadata.MethodAttributes.OfType<TAttribute>().FirstOrDefault();
@@ -39,11 +45,10 @@ namespace AiUtility.ToolKits.Services
 
             foreach(var p in metadata.Parameters)
             {
-                var property = new TProperty
-                {
-                    Type = MapToAiSchemaType(p.ParameterType) ,
-                    Description = p.GetCustomAttribute<DescriptionAttribute>()?.Description ?? defaultParameterDescription
-                };
+                var property =
+                    CreateParameterProperty(
+                        p);
+
 
                 // 處理 Enum
                 var enumNames = enumUtilityService.GetEnumNames(p.ParameterType);
@@ -59,6 +64,35 @@ namespace AiUtility.ToolKits.Services
             }
 
             return parameters;
+        }
+
+        /// <summary>
+        /// Creates the schema property for the specified tool parameter.
+        /// </summary>
+        /// <param name="parameter">
+        /// The tool parameter metadata.
+        /// </param>
+        /// <returns>
+        /// The generated parameter schema property.
+        /// </returns>
+        protected virtual TProperty CreateParameterProperty(
+            ParameterInfo parameter)
+        {
+            ArgumentNullException.ThrowIfNull(
+                parameter);
+
+            return new TProperty
+            {
+                Type =
+                    MapToAiSchemaType(
+                        parameter.ParameterType),
+
+                Description =
+                    parameter
+                        .GetCustomAttribute<DescriptionAttribute>()
+                        ?.Description
+                    ?? defaultParameterDescription
+            };
         }
 
         protected virtual string MapToAiSchemaType(Type type)
