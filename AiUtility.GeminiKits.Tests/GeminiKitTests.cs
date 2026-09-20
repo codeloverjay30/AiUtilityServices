@@ -1,10 +1,15 @@
 ﻿using AiUtility.GeminiKits.Attributes;
+using AiUtility.GeminiKits.Mappers;
 using AiUtility.GeminiKits.Models;
 using AiUtility.GeminiKits.Registry;
 using AiUtility.GeminiKits.Services;
+using AiUtility.ToolKits.Models;
+using AiUtility.ToolKits.Services;
 using EnumUtilityServices;
 using ExpressionTreeUtilityServices;
+using FluentAssertions;
 using JsonUtilityServices;
+using Moq;
 using ReflectionUtilityServices;
 using System;
 using System.Collections.Generic;
@@ -28,12 +33,27 @@ namespace AiUtility.GeminiKits.Tests
         private GeminiToolConverter _geminiToolConverter;
         private GeminiToolDispatcher _geminiToolDispatcher;
         //private GeminiToolExecutor _geminiToolExecutor;
+
+        private Mock<IAiParameterSchemaGenerator>
+            _parameterSchemaGeneratorMock = null!;
+
+        private IGeminiParameterPropertyMapper
+            _parameterPropertyMapper = null!;
+
         private readonly ITestOutputHelper _output;
         public GeminiKitTests(ITestOutputHelper output)
         {
             // 這裡可以進行一些測試前的初始化工作
             _output = output;
             Setup();
+
+            _parameterSchemaGeneratorMock =
+                new Mock<IAiParameterSchemaGenerator>(
+                    MockBehavior.Strict);
+
+            _parameterPropertyMapper =
+                new GeminiParameterPropertyMapper();
+
         }
 
         private void Setup()
@@ -108,13 +128,46 @@ namespace AiUtility.GeminiKits.Tests
         {
             _geminiToolRegistry = CreateRegistry();
         }
+        /// <summary>
+        /// Creates the Gemini tool converter and its test dependencies.
+        /// </summary>
+        /// <returns>
+        /// The configured Gemini tool converter.
+        /// </returns>
         private GeminiToolConverter CreateToolConverter()
         {
+            _parameterSchemaGeneratorMock =
+                new Mock<IAiParameterSchemaGenerator>(
+                    MockBehavior.Strict);
+
+            _parameterSchemaGeneratorMock
+                .Setup(
+                    generator =>
+                        generator.Generate(
+                            It.IsAny<Type>()))
+                .Returns(
+                    (Type type) =>
+                        new AiParameterPropertyBase
+                        {
+                            Type =
+                                _jsonUtilityService.GetJsonType(
+                                    type)
+                        });
+
+            _parameterPropertyMapper =
+                new GeminiParameterPropertyMapper();
+
             return new GeminiToolConverter(
-                _jsonUtilityService,
-                _enumUtilityService
-            );
+                jsonUtilityService:
+                    _jsonUtilityService,
+                enumUtilityService:
+                    _enumUtilityService,
+                parameterSchemaGenerator:
+                    _parameterSchemaGeneratorMock.Object,
+                parameterPropertyMapper:
+                    _parameterPropertyMapper);
         }
+
         private void SetupToolConverter()
         {
             _geminiToolConverter = CreateToolConverter();
@@ -203,7 +256,7 @@ namespace AiUtility.GeminiKits.Tests
             _output.WriteLine($"metadata!.FastInvoke:{metadata!.FastInvoke}");
             _output.WriteLine($"metadata!.InstanceFactory:{metadata!.InstanceFactory}");
             _output.WriteLine($"metadata!.InstanceFactory!():{metadata!.InstanceFactory!()}");
-           
+
 
             // Assert
             // 驗證結果是否符合預期
@@ -229,7 +282,13 @@ namespace AiUtility.GeminiKits.Tests
 
             // Assert
             // 驗證結果是否符合預期
-            Assert.Equal(metadatas!.Count()!,1);
+            metadatas
+                .Select(metadata => metadata.FunctionName)
+                .Should()
+                .BeEquivalentTo(
+                    [
+                        "GetAnswer",
+                    ]);
         }
 
         [Fact]
@@ -254,7 +313,16 @@ namespace AiUtility.GeminiKits.Tests
 
             // Assert
             // 驗證結果是否符合預期
-            Assert.Equal(metadatas!.Count()!,4);
+            metadatas
+                .Select(metadata => metadata.FunctionName)
+                .Should()
+                .BeEquivalentTo(
+                    [
+                        "MethodWithGeminiAttribute",
+                        "AddNumbers",
+                        "GetStatus",
+                        "GetAnswer",
+                    ]);
         }
 
         [Fact]
@@ -310,7 +378,7 @@ namespace AiUtility.GeminiKits.Tests
             var toolDeclaration = _geminiToolConverter.ToToolDeclaration(metadata);
 
             var result = await _geminiToolDispatcher.DispatchAsync(
-                toolDeclaration!.Name, 
+                toolDeclaration!.Name,
             new Dictionary<string , object>
             {
                 { "answer" , "Banana is a fruit" },

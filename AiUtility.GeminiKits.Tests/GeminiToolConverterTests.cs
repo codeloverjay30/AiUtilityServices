@@ -1,9 +1,13 @@
 ﻿using AiUtility.GeminiKits.Abstractions;
 using AiUtility.GeminiKits.Attributes;
+using AiUtility.GeminiKits.Mappers;
 using AiUtility.GeminiKits.Models;
 using AiUtility.GeminiKits.Services;
 using AiUtility.ToolKits.Abstractions;
+using AiUtility.ToolKits.Models;
+using AiUtility.ToolKits.Services;
 using EnumUtilityServices;
+using FluentAssertions;
 using JsonUtilityServices;
 using Moq;
 using System.ComponentModel;
@@ -22,16 +26,32 @@ namespace AiUtility.GeminiKits.Tests
         private const string GlobalDefaultDesc = "Custom Global Default";
         private const string GlobalDefaultParamDesc = "Custom Param Default";
 
+        private Mock<IAiParameterSchemaGenerator>
+            _parameterSchemaGeneratorMock = null!;
+
+        private Mock<IGeminiParameterPropertyMapper>
+            _parameterPropertyMapperMock = null!;
+
         public GeminiToolConverterTests()
         {
             _mockJsonService = new Mock<IJsonUtilityService>();
             _mockEnumService = new Mock<IEnumUtilityService>();
 
-            // 測試時可以注入自定義的預設值來驗證引數是否生效
-            _converter = new GeminiToolConverter(
-                _mockJsonService.Object ,
-                _mockEnumService.Object
-            );
+            _parameterSchemaGeneratorMock =
+                new Mock<IAiParameterSchemaGenerator>(
+                    MockBehavior.Strict);
+
+            _parameterPropertyMapperMock =
+                new Mock<IGeminiParameterPropertyMapper>(
+                    MockBehavior.Strict);
+
+            _converter =
+                new GeminiToolConverter(
+                    _mockJsonService.Object,
+                    _mockEnumService.Object,
+                    _parameterSchemaGeneratorMock.Object,
+                    _parameterPropertyMapperMock.Object);
+
         }
 
         [Fact]
@@ -67,6 +87,35 @@ namespace AiUtility.GeminiKits.Tests
         public void ToToolDeclaration_ShouldIncludeEnumValues_WhenParameterIsEnum()
         {
             // Arrange
+
+            var schema =
+                new AiParameterPropertyBase
+                {
+                    Type = "string",
+                };
+
+            var mappedProperty =
+                new GeminiParameterProperty
+                {
+                    Type = "string",
+                };
+
+            _parameterSchemaGeneratorMock
+                .Setup(
+                    generator =>
+                        generator.Generate(
+                            typeof(DateTimeKind)))
+                .Returns(
+                    schema);
+
+            _parameterPropertyMapperMock
+                .Setup(
+                    mapper =>
+                        mapper.Map(
+                            schema))
+                .Returns(
+                    mappedProperty);
+
             var methodInfo = typeof(TestToolbox).GetMethod(nameof(TestToolbox.MethodWithEnum));
             var metadata = CreateMetadata(methodInfo!);
 
@@ -98,6 +147,34 @@ namespace AiUtility.GeminiKits.Tests
         public void ToToolDeclaration_ShouldUseDefaultParameterDescription_WhenParamHasNoDescription()
         {
             // Arrange
+            var schema =
+                new AiParameterPropertyBase
+                {
+                    Type = "string",
+                };
+
+            var mappedProperty =
+                new GeminiParameterProperty
+                {
+                    Type = "string",
+                };
+
+            _parameterSchemaGeneratorMock
+                .Setup(
+                    generator =>
+                        generator.Generate(
+                            typeof(string)))
+                .Returns(
+                    schema);
+
+            _parameterPropertyMapperMock
+                .Setup(
+                    mapper =>
+                        mapper.Map(
+                            schema))
+                .Returns(
+                    mappedProperty);
+
             var methodInfo = typeof(TestToolbox).GetMethod(nameof(TestToolbox.MethodWithNoParamDesc));
             var metadata = CreateMetadata(methodInfo!);
             _mockJsonService.Setup(s => s.GetJsonType(It.IsAny<Type>())).Returns("string");
@@ -110,7 +187,21 @@ namespace AiUtility.GeminiKits.Tests
             properties.TryGetValue("input" , out inputParam);
 
             // Assert: 驗證參數是否拿到了預設描述 (而不是空字串)
-            Assert.False(string.IsNullOrEmpty(inputParam?.Description));
+            inputParam.Should().NotBeNull();
+            inputParam!.Description.Should().Be("ExpectedParamDesc");
+
+            _parameterSchemaGeneratorMock.Verify(
+                generator =>
+                    generator.Generate(
+                        typeof(string)),
+                Times.Once);
+
+            _parameterPropertyMapperMock.Verify(
+                mapper =>
+                    mapper.Map(
+                        schema),
+                Times.Once);
+
         }
 
         // --- Helper Methods ---
@@ -119,10 +210,12 @@ namespace AiUtility.GeminiKits.Tests
         {
             // 建立一個專門測試預設值的實例
             return new GeminiToolConverter(
-                _mockJsonService.Object ,
-                _mockEnumService.Object ,
-                "DefaultToolDesc" , // 明確傳入預設參數描述
-                "ExpectedParamDesc" // 明確傳入預設參數描述
+                _mockJsonService.Object,
+                _mockEnumService.Object,
+                _parameterSchemaGeneratorMock.Object,
+                _parameterPropertyMapperMock.Object,
+                defaultDescription: "DefaultToolDesc",
+                defaultParameterDescription: "ExpectedParamDesc"
             );
         }
 
