@@ -33,6 +33,17 @@ namespace AiUtility.GeminiUtilityServices.Models
         public double? AverageLogProbabilities { get; set; }
 
         /// <summary>
+        /// Gets or sets the message describing why candidate generation finished.
+        /// </summary>
+        [JsonPropertyName("finishMessage")]
+        public string? FinishMessage
+        {
+            get;
+            set;
+        }
+
+
+        /// <summary>
         /// Creates a deep copy of the current candidate.
         /// </summary>
         /// <returns>
@@ -43,6 +54,7 @@ namespace AiUtility.GeminiUtilityServices.Models
             return new GeminiCandidate
             {
                 Content = Content.DeepClone(),
+                FinishMessage = FinishMessage,
                 FinishReason = FinishReason,
                 Index = Index,
                 AverageLogProbabilities = AverageLogProbabilities
