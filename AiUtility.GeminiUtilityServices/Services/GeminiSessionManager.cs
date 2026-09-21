@@ -635,7 +635,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                 return (
                     Part: new GeminiPart
                     {
-                        FunctionResponse = new GeminiFunctionResponse { Name = call.Name , Response = JsonSerializer.Serialize(result) }
+                        FunctionResponse = new GeminiFunctionResponse { Name = call.Name , Response = CreateFunctionResponse(result) }
                     } ,
                     Status: new StatusJsonModel
                     {
@@ -659,7 +659,13 @@ namespace AiUtility.GeminiUtilityServices.Services
                         FunctionResponse = new GeminiFunctionResponse
                         {
                             Name = call.Name ,
-                            Response = JsonSerializer.Serialize(new { status = "error" , message = ex.Message })
+                            Response = JsonSerializer.SerializeToElement(
+                                new
+                                {
+                                    success = false,
+                                    status = "error",
+                                    message = ex.Message
+                                })
                         }
                     } ,
                     Status: new StatusJsonModel
@@ -685,7 +691,13 @@ namespace AiUtility.GeminiUtilityServices.Services
                         FunctionResponse = new GeminiFunctionResponse
                         {
                             Name = call.Name ,
-                            Response = JsonSerializer.Serialize(new { status = "error" , message = ex.Message })
+                            Response = JsonSerializer.SerializeToElement(
+                            new
+                            {
+                                success = false,
+                                status = "error",
+                                message = ex.Message
+                            })
                         }
                     } ,
                     Status: new StatusJsonModel
@@ -775,6 +787,44 @@ namespace AiUtility.GeminiUtilityServices.Services
         {
             var json = File.ReadAllText(filePath);
             return JsonSerializer.Deserialize<GeminiGenerateRequest>(json) ?? throw new InvalidOperationException("無法解析 Session 檔案。");
+        }
+
+        /// <summary>
+        /// Creates a structured Gemini function response from a tool result.
+        /// </summary>
+        /// <param name="result">
+        /// The result returned by the executed tool.
+        /// </param>
+        /// <returns>
+        /// A JSON object suitable for the Gemini function-response wire contract.
+        /// </returns>
+        internal static JsonElement CreateFunctionResponse(
+            object? result)
+        {
+            if (result is null)
+            {
+                return JsonSerializer.SerializeToElement(
+                    new
+                    {
+                        success = true,
+                    });
+            }
+
+            var response =
+                JsonSerializer.SerializeToElement(
+                    result);
+
+            if (response.ValueKind == JsonValueKind.Object)
+            {
+                return response;
+            }
+
+            return JsonSerializer.SerializeToElement(
+                new
+                {
+                    success = true,
+                    result,
+                });
         }
     }
 }

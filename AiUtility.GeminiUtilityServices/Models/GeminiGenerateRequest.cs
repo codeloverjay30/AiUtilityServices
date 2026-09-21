@@ -336,133 +336,119 @@ namespace AiUtility.GeminiUtilityServices.Models
 
         /// <inheritdoc cref="AddToolResponse(ReadOnlyMemory{char}, ReadOnlyMemory{char})"/>
         /// <remarks>
-        /// For the extremely better performance, consider <seealso cref="AddToolResponse(ReadOnlyMemory{char}, ReadOnlyMemory{char})"/> method which has features: zero allocations.
+        /// For better allocation behavior, prefer the
+        /// <see cref="AddToolResponse(ReadOnlyMemory{char}, ReadOnlyMemory{char})"/>
+        /// overload.
         /// </remarks>
-        [Obsolete("For the extremely better performance, consider <seealso cref=\"AddToolResponse(ReadOnlyMemory{char}, ReadOnlyMemory{char})\"/> method which has features: zero allocations.")]
-        [TechnicalDebt(CategoryType.ExecutedTimePerformanceIssue , "AddToolResponse(ReadOnlyMemory{char}, ReadOnlyMemory{char})")]
+        [Obsolete(
+            "For better allocation behavior, use AddToolResponse(ReadOnlyMemory<char>, ReadOnlyMemory<char>).")]
         public void AddToolResponse(
-            string functionName ,
-            string aiResponse
-        )
+            string functionName,
+            string aiResponse)
         {
-            // 注意：Google 要求 Role 必須是 "function" (或是特定版本要求 user/model 配對)
-            // 在 v1beta 中，通常是以 "user" 的身份回傳 functionResponse，或使用專屬角色
-            var message = new GeminiMessage
-            {
-                Role = AiUtility.AiBaseUtilityServices.Consts.Constants.AiApi.GeminiAiStudio.AiSchema.FunctionCall.FUNCTION, // function
-                Parts = new List<GeminiPart>()
-                {
-                    new GeminiPart
-                    {
-                        FunctionResponse = new GeminiFunctionResponse
-                        {
-                            Name = functionName ,
-                            Response = aiResponse // 注意：這裡簡化處理，實際使用中可能需要使用複雜的序列化
-                        }
-                    }
-                }
+            ArgumentNullException.ThrowIfNull(
+                functionName);
 
-            };
-            this.Contents.Add(message);
+            ArgumentNullException.ThrowIfNull(
+                aiResponse);
+
+            AddToolResponse(
+                functionName.AsMemory(),
+                aiResponse.AsMemory());
+        }
+
+
+        /// <summary>
+        /// Adds a structured tool response to this request.
+        /// </summary>
+        /// <param name="functionName">
+        /// The executed function name.
+        /// </param>
+        /// <param name="aiResponse">
+        /// The structured response represented as a JSON object.
+        /// </param>
+        public void AddToolResponse(
+            ReadOnlyMemory<char> functionName,
+            ReadOnlyMemory<char> aiResponse)
+        {
+            var message =
+                new GeminiMessage
+                {
+                    Role =
+                        AiUtility.AiBaseUtilityServices.Consts.Constants
+                            .AiApi
+                            .GeminiAiStudio
+                            .AiSchema
+                            .FunctionCall
+                            .USER, // "user"
+
+                    Parts =
+                        new List<GeminiPart>
+                        {
+                            new GeminiPart
+                            {
+                                FunctionResponse =
+                                    new GeminiFunctionResponse
+                                    {
+                                        RawName =
+                                            functionName,
+
+                                        RawResponse =
+                                            aiResponse,
+                                    },
+                            },
+                        },
+                };
+
+            Contents.Add(
+                message);
+        }
+
+
+        /// <inheritdoc cref="WithToolResponse(ReadOnlyMemory{char}, ReadOnlyMemory{char})"/>
+        [Obsolete(
+            "For better allocation behavior, use WithToolResponse(ReadOnlyMemory<char>, ReadOnlyMemory<char>).")]
+        public GeminiGenerateRequest WithToolResponse(
+            string functionName,
+            string aiResponse)
+        {
+            ArgumentNullException.ThrowIfNull(
+                functionName);
+
+            ArgumentNullException.ThrowIfNull(
+                aiResponse);
+
+            return WithToolResponse(
+                functionName.AsMemory(),
+                aiResponse.AsMemory());
         }
 
         /// <summary>
-        /// Uility method:
-        /// Add one <see cref="Contents"/> given <paramref name="functionName"/> and <paramref name="aiResponse"/>
+        /// Creates a cloned request containing the specified structured tool response.
         /// </summary>
-        /// <param name="functionName">Function name</param>
-        /// <param name="aiResponse">response from AI model</param>
-        public void AddToolResponse(
-            ReadOnlyMemory<char> functionName ,
-            ReadOnlyMemory<char> aiResponse
-        )
-        {
-            // 注意：Google 要求 Role 必須是 "function" (或是特定版本要求 user/model 配對)
-            // 在 v1beta 中，通常是以 "user" 的身份回傳 functionResponse，或使用專屬角色
-            var message = new GeminiMessage
-            {
-                Role = AiUtility.AiBaseUtilityServices.Consts.Constants.AiApi.GeminiAiStudio.AiSchema.FunctionCall.FUNCTION, // function
-                Parts = new List<GeminiPart>()
-                {
-                    new GeminiPart
-                    {
-                        FunctionResponse = new GeminiFunctionResponse
-                        {
-                            RawName = functionName ,
-                            RawResponse = aiResponse // 注意：這裡簡化處理，實際使用中可能需要使用複雜的序列化
-                        }
-                    }
-                }
-
-            };
-            this.Contents.Add(message);
-        }
-
-        /// <inheritdoc cref="WithToolResponse(ReadOnlyMemory{char}, ReadOnlyMemory{char})"/>
-        /// <remarks>
-        /// For the extremely better performance, consider <seealso cref="WithToolResponse(ReadOnlyMemory{char}, ReadOnlyMemory{char})"/> method which has features: zero allocations.
-        /// </remarks>
-        [Obsolete("For the extremely better performance, consider <seealso cref=\"WithToolResponse(ReadOnlyMemory{char}, ReadOnlyMemory{char})\"/> method which has features: zero allocations.")]
-        [TechnicalDebt(CategoryType.ExecutedTimePerformanceIssue , "WithToolResponse(ReadOnlyMemory{char}, ReadOnlyMemory{char})")]
+        /// <param name="functionName">
+        /// The executed function name.
+        /// </param>
+        /// <param name="aiResponse">
+        /// The structured response represented as a JSON object.
+        /// </param>
+        /// <returns>
+        /// A cloned request containing the tool response.
+        /// </returns>
         public GeminiGenerateRequest WithToolResponse(
-            string functionName ,
-            string aiResponse
-        )
+            ReadOnlyMemory<char> functionName,
+            ReadOnlyMemory<char> aiResponse)
         {
-            var clone = this.DeepClone(); // 取得深層複製的副本
+            var clone =
+                DeepClone();
 
-            var message = new GeminiMessage
-            {
-                Role = AiUtility.AiBaseUtilityServices.Consts.Constants.AiApi.GeminiAiStudio.AiSchema.FunctionCall.FUNCTION , // function
-                Parts = new List<GeminiPart>
-                {
-                    new GeminiPart
-                    {
-                        FunctionResponse = new GeminiFunctionResponse
-                        {
-                            Name = functionName,
-                            Response = aiResponse
-                        }
-                    }
-                }
-            };
+            clone.AddToolResponse(
+                functionName,
+                aiResponse);
 
-            clone.Contents.Add(message);
             return clone;
         }
 
-        /// <inheritdoc cref="AddToolResponse(ReadOnlyMemory{char}, ReadOnlyMemory{char})"/>
-        /// <returns></returns>
-        /// <remarks>
-        /// the cloned version of <seealso cref="AddToolResponse(ReadOnlyMemory{char}, ReadOnlyMemory{char})"/> method
-        /// see <seealso cref="AddToolResponse(ReadOnlyMemory{char}, ReadOnlyMemory{char})"/> method for more details.
-        /// </remarks>
-        public GeminiGenerateRequest WithToolResponse(
-            ReadOnlyMemory<char> functionName ,
-            ReadOnlyMemory<char> aiResponse
-        )
-        {
-            var clone = this.DeepClone(); // 取得深層複製的副本
-
-            var message = new GeminiMessage
-            {
-                Role = AiUtility.AiBaseUtilityServices.Consts.Constants.AiApi.GeminiAiStudio.AiSchema.FunctionCall.FUNCTION , // function
-                Parts = new List<GeminiPart>
-                {
-                    new GeminiPart
-                    {
-                        FunctionResponse = new GeminiFunctionResponse
-                        {
-                            RawName = functionName,
-                            RawResponse = aiResponse
-                        }
-                    }
-                }
-            };
-
-            clone.Contents.Add(message);
-            return clone;
-        }
 
         /// <summary>
         /// Purge all images except last Nth image to text or delete them to save the token.

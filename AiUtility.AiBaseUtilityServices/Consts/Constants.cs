@@ -126,6 +126,11 @@ namespace AiUtility.AiBaseUtilityServices.Consts
                     public static class FunctionCall
                     {
                         public const string FUNCTION = "function";
+
+                        /// <summary>
+                        /// Represents the Gemini user role.
+                        /// </summary>
+                        public const string USER = "user";
                     }
 
                     public static class FunctionParameters
