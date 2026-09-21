@@ -1,4 +1,5 @@
 using AiUtility.GeminiUtilityServices.Models;
+using AiUtility.GeminiKits.Models;
 using FluentAssertions;
 
 namespace AiUtility.GeminiUtilityServices.Models.Tests
@@ -115,7 +116,7 @@ namespace AiUtility.GeminiUtilityServices.Models.Tests
                     {
                         FunctionDeclarations =
                         [
-                            "tool"
+                            new GeminiToolDeclaration { Name = "tool" }
                         ]
                     }
                 ]

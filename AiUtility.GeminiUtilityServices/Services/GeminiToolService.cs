@@ -35,7 +35,10 @@ namespace AiUtility.GeminiUtilityServices.Services
             {
                 request.Tools = new List<GeminiToolDeclarationWrapper>
                 {
-                    new GeminiToolDeclarationWrapper { FunctionDeclarations = declarations }
+                    new GeminiToolDeclarationWrapper { FunctionDeclarations = declarations
+                        .Select(declaration =>
+                            (AiUtility.GeminiKits.Models.GeminiToolDeclaration)declaration)
+                        .ToList() }
                 };
             }
         }

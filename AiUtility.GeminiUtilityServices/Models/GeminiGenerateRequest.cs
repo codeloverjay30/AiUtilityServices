@@ -7,6 +7,7 @@ using TypeConstants = TypeAlias::CommonConstants.Types.TypeConstants;
 using AiUtility.AiBaseUtilityServices.Consts;
 using AiUtility.AiBaseUtilityServices.Models;
 using AiUtility.AiBaseUtilityServices.Services;
+using AiUtility.GeminiKits.Models;
 using AiUtility.GeminiUtilityServices.Extensions;
 using AiUtility.GeminiUtilityServices.Services;
 using CustomDataAnnotations.Maintenance;
@@ -56,12 +57,12 @@ namespace AiUtility.GeminiUtilityServices.Models
         public class GeminiToolDeclarationWrapper
         {
             [JsonPropertyName("function_declarations")]
-            public List<object> FunctionDeclarations { get; set; } = new();
+            public List<GeminiToolDeclaration> FunctionDeclarations { get; set; } = new();
 
             public GeminiToolDeclarationWrapper DeepClone()
             {
                 var clone = (GeminiToolDeclarationWrapper)this.MemberwiseClone();
-                clone.FunctionDeclarations = new List<object>(this.FunctionDeclarations);
+                clone.FunctionDeclarations = new List<GeminiToolDeclaration>(this.FunctionDeclarations);
                 return clone;
             }
         }
