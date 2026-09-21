@@ -1,4 +1,5 @@
-﻿using AiUtility.ToolKits.Models;
+﻿using AiUtility.GeminiKits.Converters;
+using AiUtility.ToolKits.Models;
 using System.Text.Json.Serialization;
 
 namespace AiUtility.GeminiKits.Models
@@ -6,6 +7,7 @@ namespace AiUtility.GeminiKits.Models
     /// <summary>
     /// Represents a Gemini function parameter property.
     /// </summary>
+    [JsonConverter(typeof(GeminiParameterPropertyJsonConverter))]
     public class GeminiParameterProperty
         : AiParameterPropertyBase
     {
