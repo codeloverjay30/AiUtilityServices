@@ -1,3 +1,4 @@
+using System.Text.Json;
 using AiUtility.GeminiUtilityServices.Models;
 using AiUtility.GeminiKits.Models;
 using FluentAssertions;
@@ -141,6 +142,110 @@ namespace AiUtility.GeminiUtilityServices.Models.Tests
             clone.Tools[0].FunctionDeclarations.Should()
                 .NotBeSameAs(
                     sut.Tools[0].FunctionDeclarations);
+        }
+
+        /// <summary>
+        /// Verifies that a Gemini tool declaration uses the expected
+        /// Google Gemini wire property names.
+        /// </summary>
+        [Fact]
+        public void Serialize_WhenGivenGeminiToolDeclaration_ShouldUseGeminiPropertyNames()
+        {
+            // Arrange
+            var declaration =
+                new GeminiToolDeclaration
+                {
+                    Name = "Click",
+                    Description = "Clicks the screen.",
+                    Parameters =
+                        new GeminiParameters()
+                };
+
+            // Act
+            var json =
+                JsonSerializer.Serialize(
+                    declaration,
+                    AiUtility.Common.Options.JsonOptions.DefaultOptions);
+
+            // Assert
+            json.Should().Contain(
+                "\"name\"");
+
+            json.Should().Contain(
+                "\"description\"");
+
+            json.Should().Contain(
+                "\"parameters\"");
+
+            json.Should().NotContain(
+                "\"Name\"");
+
+            json.Should().NotContain(
+                "\"Description\"");
+
+            json.Should().NotContain(
+                "\"Parameters\"");
+        }
+
+        /// <summary>
+        /// Verifies that a Gemini tool declaration preserves the expected
+        /// Gemini wire contract when serialized through a generate request.
+        /// </summary>
+        [Fact]
+        public void ToGoogleApiRequest_WhenContainingTool_ShouldUseGeminiWirePropertyNames()
+        {
+            // Arrange
+            var declaration =
+                new GeminiToolDeclaration
+                {
+                    Name = "Click",
+                    Description = "Clicks the screen.",
+                    Parameters =
+                        new GeminiParameters()
+                };
+
+            var request =
+                new GeminiGenerateRequest();
+
+            request.Tools.Add(
+                new GeminiGenerateRequest.GeminiToolDeclarationWrapper
+                {
+                    FunctionDeclarations =
+                    [
+                        declaration
+                    ]
+                });
+
+            // Act
+            var apiPayload =
+                request.ToGoogleApiRequest();
+
+            var json =
+                JsonSerializer.Serialize(
+                    apiPayload,
+                    AiUtility.Common.Options.JsonOptions.DefaultOptions);
+
+            // Assert
+            json.Should().Contain(
+                "\"function_declarations\"");
+
+            json.Should().Contain(
+                "\"name\"");
+
+            json.Should().Contain(
+                "\"description\"");
+
+            json.Should().Contain(
+                "\"parameters\"");
+
+            json.Should().NotContain(
+                "\"Name\"");
+
+            json.Should().NotContain(
+                "\"Description\"");
+
+            json.Should().NotContain(
+                "\"Parameters\"");
         }
     }
 }
