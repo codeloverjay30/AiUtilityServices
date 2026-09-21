@@ -15,6 +15,8 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using TypeUtilityServices;
+using System.Text.Json.Serialization;
+using AiUtility.ToolKits.Models;
 
 namespace AiUtility.GeminiUtilityServices.Services
 {
@@ -35,84 +37,179 @@ namespace AiUtility.GeminiUtilityServices.Services
         private readonly ITypeUtilityService _typeUtilityService = typeUtilityService;
         public ITypeUtilityService TypeUtilityServices => _typeUtilityService;
 
-        private readonly ConcurrentDictionary<Type , object> _cache = new();
-        public ConcurrentDictionary<Type , object> Cache => _cache;
-        public object Generate<T>() => Generate(typeof(T));
-        public object Generate(Type type)
+    private readonly ConcurrentDictionary<Type,AiParameterPropertyBase> _cache =
+        new();
+
+        public ConcurrentDictionary<
+            Type,
+            AiParameterPropertyBase> Cache =>
+                _cache;
+
+        /// <summary>
+/// Generates or retrieves a cached schema for the specified CLR type.
+/// </summary>
+/// <typeparam name="T">
+/// The CLR type to generate a schema for.
+/// </typeparam>
+/// <returns>
+/// The generated schema.
+/// </returns>
+public AiParameterPropertyBase Generate<T>()
+{
+    return Generate(
+        typeof(T));
+}
+
+        /// <summary>
+        /// Generates or retrieves a cached schema for the specified CLR type.
+        /// </summary>
+        /// <param name="type">
+        /// The CLR type to generate a schema for.
+        /// </param>
+        /// <returns>
+        /// The generated schema.
+        /// </returns>
+        public AiParameterPropertyBase Generate(
+            Type type)
         {
-            return _cache.GetOrAdd(type , t => {
-                return _InternalGenerate(t);
-            });
+            ArgumentNullException.ThrowIfNull(
+                type);
+
+            return _cache.GetOrAdd(
+                type,
+                _InternalGenerate);
         }
 
-        internal object _InternalGenerate(Type type)
-        {
-            string typeStr = _jsonUtilityService.GetJsonType(type);
-            if(!typeStr.Equals(TypeConstants.OBJECT)) // "object"
-            {
-                return new { type = typeStr };
-            }
 
-            if(typeof(IEnumerable).IsAssignableFrom(type) && type.IsGenericType)
+        /// <summary>
+        /// Generates a Gemini-compatible schema for the specified CLR type.
+        /// </summary>
+        /// <param name="type">
+        /// The CLR type to convert to a Gemini schema.
+        /// </param>
+        /// <returns>
+        /// The generated Gemini-compatible schema.
+        /// </returns>
+        internal AiParameterPropertyBase _InternalGenerate(
+            Type type)
+        {
+            ArgumentNullException.ThrowIfNull(
+                type);
+
+            if (_typeUtilityService.TryGetCollectionElementType(
+                    type,
+                    out var elementType))
             {
-                return new
+                if (elementType is null)
                 {
-                    type = TypeConstants.ARRAY, // "array"
-                    items = _InternalGenerate(type.GetGenericArguments() [ 0 ])
+                    throw new InvalidOperationException(
+                        $"The collection element type could not be determined for '{type.FullName}'.");
+                }
+
+                return new AiParameterPropertyBase
+                {
+                    Type =
+                        TypeConstants.ARRAY,
+
+                    Items =
+                        _InternalGenerate(
+                            elementType)
                 };
             }
 
-            var properties = new Dictionary<string , object>();
-            var required = new List<string>();
+            if (_typeUtilityService.IsComplexType(
+                    type))
+            {
+                return GenerateObjectSchema(
+                    type);
+            }
 
-            // iterate all properties that are public and non-static without `[System.Text.Json.Serialization.JsonIgnore]`.
+            return new AiParameterPropertyBase
+            {
+                Type =
+                    _jsonUtilityService.GetJsonType(
+                        type)
+            };
+        }
+
+
+        /// <summary>
+        /// Generates a Gemini object schema for the specified complex CLR type.
+        /// </summary>
+        /// <param name="type">
+        /// The complex CLR type to inspect.
+        /// </param>
+        /// <returns>
+        /// The generated Gemini object schema.
+        /// </returns>
+        private AiParameterPropertyBase GenerateObjectSchema(
+            Type type)
+        {
+            ArgumentNullException.ThrowIfNull(
+                type);
+
+            var properties =
+                new Dictionary<
+                    string,
+                    AiParameterPropertyBase>();
+
+            var required =
+                new List<string>();
 
             var publicInstanceProperties =
-                type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                    .Where(p => p.GetCustomAttribute<System.Text.Json.Serialization.JsonIgnoreAttribute>() == null);
+                type.GetProperties(
+                        BindingFlags.Public |
+                        BindingFlags.Instance)
+                    .Where(
+                        property =>
+                            property.GetCustomAttribute<
+                                JsonIgnoreAttribute>()
+                            is null);
 
-            foreach(var prop in publicInstanceProperties)
+            foreach (var property in
+                     publicInstanceProperties)
             {
-                var propName = prop.Name.ToLower();
-                var propSchema = _InternalGenerate(prop.PropertyType);
+                var propertyName =
+                    property.Name.ToLowerInvariant();
 
-                var descriptionAttr = prop.GetCustomAttribute<DescriptionAttribute>();
-                if(descriptionAttr != null)
+                var propertySchema =
+                    _InternalGenerate(
+                        property.PropertyType);
+
+                var descriptionAttribute =
+                    property.GetCustomAttribute<
+                        DescriptionAttribute>();
+
+                if (descriptionAttribute is not null)
                 {
-                    propSchema = AddDescriptionToSchema(propSchema , descriptionAttr.Description);
+                    propertySchema.Description =
+                        descriptionAttribute.Description;
                 }
 
-                properties.Add(propName , _InternalGenerate(prop.PropertyType));
+                properties.Add(
+                    propertyName,
+                    propertySchema);
 
-                if(!_typeUtilityService.IsNullableType(prop.PropertyType))
+                if (!_typeUtilityService.IsNullableType(
+                        property.PropertyType))
                 {
-                    required.Add(propName);
+                    required.Add(
+                        propertyName);
                 }
             }
 
-            return new
+            return new AiParameterPropertyBase
             {
-                type = TypeConstants.OBJECT , // "object"
-                properties = properties ,
-                required = required.Count > 0 ? required : null
-            };
-        }
-        private object AddDescriptionToSchema(object schema , string description)
-        {
-            var dynamicSchema = schema as dynamic;
+                Type =
+                    TypeConstants.OBJECT,
 
-            var typeProp = GetProperty(schema , AiUtility.AiBaseUtilityServices.Consts.Constants.AiApi.GeminiAiStudio.AiSchema.FunctionParameters.TYPE); // "type"
-            var itemsProp = GetProperty(schema , AiUtility.AiBaseUtilityServices.Consts.Constants.AiApi.GeminiAiStudio.AiSchema.FunctionParameters.ITEMS); // "items"
-            var propsProp = GetProperty(schema , AiUtility.AiBaseUtilityServices.Consts.Constants.AiApi.GeminiAiStudio.AiSchema.FunctionParameters.PROPERTIES); // "properties"
-            var reqProp = GetProperty(schema , AiUtility.AiBaseUtilityServices.Consts.Constants.AiApi.GeminiAiStudio.AiSchema.FunctionParameters.REQUIRED); //"required"
+                Properties =
+                    properties,
 
-            return new
-            {
-                type = typeProp ,
-                description = description ,
-                items = itemsProp ,
-                properties = propsProp ,
-                required = reqProp
+                Required =
+                    required.Count > 0
+                        ? required
+                        : null
             };
         }
 

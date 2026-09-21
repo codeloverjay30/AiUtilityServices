@@ -20,6 +20,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="TypeConstants">
+      <Aliases>TypeAlias</Aliases>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\AiUtility.GeminiUtilityServices\AiUtility.GeminiUtilityServices.csproj" />
   </ItemGroup>
 

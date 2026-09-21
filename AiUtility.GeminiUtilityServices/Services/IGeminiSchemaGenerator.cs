@@ -1,18 +1,22 @@
-﻿using JsonUtilityServices;
+﻿using AiUtility.ToolKits.Models;
+using AiUtility.ToolKits.Services;
+using JsonUtilityServices;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Text;
 using TypeUtilityServices;
 
 namespace AiUtility.GeminiUtilityServices.Services
 {
-    public interface IGeminiSchemaGenerator
+    /// <summary>
+    /// Defines a service for generating Gemini-compatible schemas
+    /// from CLR types.
+    /// </summary>
+    public interface IGeminiSchemaGenerator : IAiParameterSchemaGenerator
     {
-        public IJsonUtilityService JsonUtilityServices { get; }
-        public ITypeUtilityService TypeUtilityServices { get; }
-        public ConcurrentDictionary<Type , object> Cache { get; }
-        object Generate<T>();
-        object Generate(Type type);
+        IJsonUtilityService JsonUtilityServices { get; }
+
+        ITypeUtilityService TypeUtilityServices { get; }
+
+        ConcurrentDictionary<Type, AiParameterPropertyBase> Cache { get; }
     }
 }
