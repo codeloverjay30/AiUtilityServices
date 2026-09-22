@@ -258,7 +258,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                         }
                         request.AddMessage(new GeminiMessage
                         {
-                            Role = AiApi.GeminiAiStudio.AiSchema.FunctionCall.FUNCTION, // "function"
+                            Role = AiApi.GeminiAiStudio.AiSchema.FunctionCall.USER, // "user"
                             Parts = responseParts
                         });
                         continue;
@@ -525,7 +525,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                         }
                         request = request.WithMessage(new GeminiMessage
                         {
-                            Role = Constants.AiApi.GeminiAiStudio.AiSchema.FunctionCall.FUNCTION , // "function"
+                            Role = Constants.AiApi.GeminiAiStudio.AiSchema.FunctionCall.USER , // "user"
                             Parts = responseParts
                         });
                         continue;
