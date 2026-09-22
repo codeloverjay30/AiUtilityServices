@@ -27,6 +27,8 @@ namespace AiUtility.GeminiUtilityServices.Services
     {
         public void SyncToolsToRequest(GeminiGenerateRequest request)
         {
+            ArgumentNullException.ThrowIfNull(request);
+
             var declarations = registry.GetAllTools()
                 .Select(metadata => converter.ToToolDeclaration(metadata))
                 .ToList();
