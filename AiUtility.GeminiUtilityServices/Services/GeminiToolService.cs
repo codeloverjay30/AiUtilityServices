@@ -33,6 +33,12 @@ namespace AiUtility.GeminiUtilityServices.Services
                 .Select(metadata => converter.ToToolDeclaration(metadata))
                 .ToList();
 
+            if (declarations.Count == 0)
+            {
+                request.Tools = [];
+                return;
+            }
+
             if(declarations.Any())
             {
                 request.Tools = new List<GeminiToolDeclarationWrapper>
