@@ -339,21 +339,21 @@ public sealed class GeminiToolDeclarationSchemaIntegrationTests
         target.Properties.Should()
             .ContainKey(
                 "optionalvalue");
-
+        
 
         target.Required.Should()
             .NotBeNull();
-
+    
 
         target.Required.Should()
             .Contain(
                 "requiredvalue");
-
+        
 
         target.Required.Should()
             .NotContain(
                 "optionalvalue");
-
+        
     }
 
     /// <summary>
