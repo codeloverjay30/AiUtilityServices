@@ -154,9 +154,15 @@ namespace AiUtility.GeminiUtilityServices.Services
             IProgress<TProgress>? progressBar = null
         ) where TProgress : WorkflowProgress, new() // 限制必須繼承自基礎模型
         {
-            ArgumentNullException.ThrowIfNull(userTask);
+            ArgumentNullException.ThrowIfNull(
+                userTask);
 
-            return await ExecuteWithToolSupportAsync<TProgress>(request, userTask.AsMemory() , settings , ct, progressBar);
+            return await ExecuteWithToolSupportAsync<TProgress>(
+                request,
+                userTask.AsMemory(),
+                settings,
+                ct,
+                progressBar);
         }
         /// <summary>
         /// Register the method of custom <seealso cref="Attribute"/> (or its subclass)
@@ -472,7 +478,7 @@ namespace AiUtility.GeminiUtilityServices.Services
         {
             ArgumentNullException.ThrowIfNull(userTask);
 
-            return await WithExecuteWithToolSupportAsync(request , userTask.AsMemory() , settings , ct , progressBar);
+            return await WithExecuteWithToolSupportAsync(request, userTask.AsMemory(), settings, ct, progressBar);
         }
 
         /// <summary>
