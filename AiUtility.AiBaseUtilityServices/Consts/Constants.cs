@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using System.Text;
 
 namespace AiUtility.AiBaseUtilityServices.Consts
 {
@@ -86,7 +84,7 @@ namespace AiUtility.AiBaseUtilityServices.Consts
         {
             public const string TASK = "task";
             public const string PREPARE_TO_SEND_PROMPT_TO_AI_MODEL = $"{Vocabulary.PREPARE} to {SEND_PROMPT_TO_AI_MODEL}";
-            public const string SEND_PROMPT_TO_AI_MODEL = $"{Vocabulary.SEND} {AiModels.PROMPT} to {AiModels.AI_MODEL}"; 
+            public const string SEND_PROMPT_TO_AI_MODEL = $"{Vocabulary.SEND} {AiModels.PROMPT} to {AiModels.AI_MODEL}";
             public const string AI_THINKING = $"{AiModels.AI} thinking...";
             public const string AI_EXECUTING_TASK = $"{AiModels.AI} is {ExecutionStatus.EXECUTING} {TASK}: {{0}}";
             public const string EXECUTING_TASK = $"{ExecutionStatus.EXECUTING} {TASK}: {{0}}";
@@ -125,6 +123,13 @@ namespace AiUtility.AiBaseUtilityServices.Consts
 
                     public static class FunctionCall
                     {
+                        /// <summary>
+                        /// Represents the legacy Gemini function role.
+                        /// </summary>
+                        [EditorBrowsable(EditorBrowsableState.Never)]
+                        [Obsolete(
+                            "The Gemini Content role 'function' is no longer supported. " +
+                            "Use USER for function response content.")]
                         public const string FUNCTION = "function";
 
                         /// <summary>
@@ -228,7 +233,7 @@ namespace AiUtility.AiBaseUtilityServices.Consts
                 public const string MAX_STEPS_REACHED_FORMAT = $"Maximum step limit reached ({{0}} steps). This may be due to an incorrect tool response format preventing the {AiModels.AI} from parsing the conversation correctly. Please verify if the tool output matches the expected format and ensure successful execution.";
 
                 /// <summary>
-                /// Overall error message when calling AI API fails. 
+                /// Overall error message when calling AI API fails.
                 /// </summary>
                 public const string AI_API_RUNTIME_EXCEPTION = $"{RUNTIME_EXCEPTION_OCCURRED} while calling the {AiModels.AI} {Vocabulary.API}.";
 
