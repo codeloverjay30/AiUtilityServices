@@ -1,6 +1,7 @@
 using System.Text.Json;
-using AiUtility.GeminiUtilityServices.Models;
+using AiUtility.Common.Options;
 using AiUtility.GeminiKits.Models;
+using AiUtility.GeminiUtilityServices.Models;
 using FluentAssertions;
 
 namespace AiUtility.GeminiUtilityServices.Models.Tests
@@ -117,7 +118,10 @@ namespace AiUtility.GeminiUtilityServices.Models.Tests
                     {
                         FunctionDeclarations =
                         [
-                            new GeminiToolDeclaration { Name = "tool" }
+                            new GeminiToolDeclaration
+                            {
+                                Name = "tool"
+                            }
                         ]
                     }
                 ]
@@ -165,7 +169,7 @@ namespace AiUtility.GeminiUtilityServices.Models.Tests
             var json =
                 JsonSerializer.Serialize(
                     declaration,
-                    AiUtility.Common.Options.JsonOptions.DefaultOptions);
+                    JsonOptions.DefaultOptions);
 
             // Assert
             json.Should().Contain(
@@ -223,7 +227,7 @@ namespace AiUtility.GeminiUtilityServices.Models.Tests
             var json =
                 JsonSerializer.Serialize(
                     apiPayload,
-                    AiUtility.Common.Options.JsonOptions.DefaultOptions);
+                    JsonOptions.DefaultOptions);
 
             // Assert
             json.Should().Contain(

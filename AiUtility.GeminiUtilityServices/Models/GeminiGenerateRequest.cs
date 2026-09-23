@@ -7,7 +7,6 @@ using TypeConstants = TypeAlias::CommonConstants.Types.TypeConstants;
 using AiUtility.AiBaseUtilityServices.Consts;
 using AiUtility.AiBaseUtilityServices.Models;
 using AiUtility.AiBaseUtilityServices.Services;
-using AiUtility.GeminiKits.Models;
 using AiUtility.GeminiUtilityServices.Extensions;
 using AiUtility.GeminiUtilityServices.Services;
 using CustomDataAnnotations.Maintenance;
@@ -16,6 +15,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 using System.Text.Json.Serialization;
+using AiUtility.GeminiKits.Models;
 
 namespace AiUtility.GeminiUtilityServices.Models
 {
