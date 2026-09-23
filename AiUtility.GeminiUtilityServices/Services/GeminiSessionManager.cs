@@ -159,7 +159,6 @@ namespace AiUtility.GeminiUtilityServices.Services
             };
 
             var message = ReadOnlyMemory<char>.Empty;
-            var resultText = ReadOnlyMemory<char>.Empty;
             int currentStep = 0;
 
             var p = new TProgress
@@ -223,33 +222,38 @@ namespace AiUtility.GeminiUtilityServices.Services
                     progressBar?.Report(p);
 
                     var candidate = response?.Candidates?.FirstOrDefault();
-                    var firstPart = candidate?.Content?.Parts?.FirstOrDefault();
-                    var functionCalls = candidate?.Content.Parts
-                        .Where(p => p.FunctionCall != null)
-                        .Select(p => p.FunctionCall)
-                        .ToList();
+                    var parts = candidate?.Content?.Parts;
+                    var firstPart = parts?.FirstOrDefault();
 
-                    if(firstPart == null)
+                    if (firstPart is null)
                     {
-                        // AI 回覆空的Response
+                        const string errorMessage =
+                            Constants.Messages.FailureMessages.AI_RETURNS_NULL_RESPONSE;
+                        statusJsonModel.IsSuccess = false;
+                        statusJsonModel.Result = Constants.ExecutionStatus.ERROR;
+                        statusJsonModel.OverallErrorMessage = errorMessage;
+                        statusJsonModel.ErrorMessage = errorMessage;
+                        statusJsonModel.DetailedErrorMessage = errorMessage;
+                        statusJsonModels.StatusList.Add(statusJsonModel);
+
                         p = new TProgress
                         {
-                            Percentage = ProgressBars.COMPLETED_PERCENTAGE ,
-                            CurrentStep = currentStep ,
-                            MaxSteps = maxSteps ,
-                            CurrentAction = Constants.ExecutionStatus.AI_COMPLETES_TASK ,
-                            Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
+                            Percentage = (int)((double)Math.Max(currentStep - 1, 0)
+                                / maxSteps * ProgressBars.COMPLETED_PERCENTAGE),
+                            CurrentStep = currentStep,
+                            MaxSteps = maxSteps,
+                            CurrentAction = Constants.ExecutionStatus.ERROR,
+                            Metadata = settings.Metadata != null
+                                ? new Dictionary<string, string>(settings.Metadata) : new(),
                         };
-
-                        statusJsonModel.IsSuccess = false;
-                        statusJsonModel.Result = Constants.ExecutionStatus.ERROR; // "error"
-                        statusJsonModel.OverallErrorMessage = Constants.Messages.FailureMessages.AI_RETURNS_NULL_RESPONSE;
-                        statusJsonModel.ErrorMessage = Constants.Messages.FailureMessages.AI_RETURNS_NULL_RESPONSE;
-                        statusJsonModel.DetailedErrorMessage = Constants.Messages.FailureMessages.AI_RETURNS_NULL_RESPONSE;
-                        statusJsonModels.StatusList.Add(statusJsonModel);
                         progressBar?.Report(p);
                         return statusJsonModels;
                     }
+
+                    var functionCalls = parts!
+                        .Where(part => part.FunctionCall != null)
+                        .Select(part => part.FunctionCall)
+                        .ToList();
 
                     // 4. 檢查是否為文字回應 (AI 給出了最終答案)
                     if(candidate != null && !(firstPart?.RawText.IsEmpty ?? false))
@@ -452,7 +456,6 @@ namespace AiUtility.GeminiUtilityServices.Services
             };
 
             var message = ReadOnlyMemory<char>.Empty;
-            var resultText = ReadOnlyMemory<char>.Empty;
             int currentStep = 0;
 
             var p = new TProgress
@@ -516,31 +519,38 @@ namespace AiUtility.GeminiUtilityServices.Services
                     progressBar?.Report(p);
 
                     var candidate = response?.Candidates?.FirstOrDefault();
-                    var firstPart = candidate?.Content?.Parts?.FirstOrDefault();
-                    var functionCalls = candidate?.Content.Parts
-                        .Where(p => p.FunctionCall != null)
-                        .Select(p => p.FunctionCall)
-                        .ToList();
+                    var parts = candidate?.Content?.Parts;
+                    var firstPart = parts?.FirstOrDefault();
 
-                    if(firstPart == null)
+                    if (firstPart is null)
                     {
-                        // 取得prompt(剛剛使用者將prompt加入request)
+                        const string errorMessage =
+                            Constants.Messages.FailureMessages.AI_RETURNS_NULL_RESPONSE;
+                        statusJsonModel.IsSuccess = false;
+                        statusJsonModel.Result = Constants.ExecutionStatus.ERROR;
+                        statusJsonModel.OverallErrorMessage = errorMessage;
+                        statusJsonModel.ErrorMessage = errorMessage;
+                        statusJsonModel.DetailedErrorMessage = errorMessage;
+                        statusJsonModels.StatusList.Add(statusJsonModel);
+
                         p = new TProgress
                         {
-                            Percentage = ProgressBars.COMPLETED_PERCENTAGE ,
-                            CurrentStep = currentStep ,
-                            MaxSteps = maxSteps ,
-                            CurrentAction = Constants.ExecutionStatus.AI_COMPLETES_TASK ,
-                            Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
+                            Percentage = (int)((double)Math.Max(currentStep - 1, 0)
+                                / maxSteps * ProgressBars.COMPLETED_PERCENTAGE),
+                            CurrentStep = currentStep,
+                            MaxSteps = maxSteps,
+                            CurrentAction = Constants.ExecutionStatus.ERROR,
+                            Metadata = settings.Metadata != null
+                                ? new Dictionary<string, string>(settings.Metadata) : new(),
                         };
-
-                        resultText = request.Contents?.FirstOrDefault()?.Parts?.FirstOrDefault()?.RawText ?? ReadOnlyMemory<char>.Empty;
-                        statusJsonModel.IsSuccess = true;
-                        statusJsonModel.Result = resultText.ToString();
-                        statusJsonModels.StatusList.Add(statusJsonModel);
                         progressBar?.Report(p);
                         return statusJsonModels;
                     }
+
+                    var functionCalls = parts!
+                        .Where(part => part.FunctionCall != null)
+                        .Select(part => part.FunctionCall)
+                        .ToList();
 
                     // 4. 檢查是否為文字回應 (AI 給出了最終答案)
                     if(candidate != null && !(firstPart?.RawText.IsEmpty ?? false))
