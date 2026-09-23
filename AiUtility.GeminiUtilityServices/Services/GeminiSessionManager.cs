@@ -333,10 +333,6 @@ namespace AiUtility.GeminiUtilityServices.Services
                         // AI 要求執行工具
 
                         request.AddMessage(candidate!.Content);
-                        var options = new ParallelOptions
-                        {
-                            MaxDegreeOfParallelism = _semaphoreService.MaxRequestsPerWindow + 1 // 同時最多執行 MaxRequestsPerWindow + 1 個任務
-                        };
 
                         var responseParts = new List<GeminiPart>();
 
@@ -654,10 +650,6 @@ namespace AiUtility.GeminiUtilityServices.Services
                     {
                         request = request.WithMessage(candidate.Content);
 
-                        var options = new ParallelOptions
-                        {
-                            MaxDegreeOfParallelism = _semaphoreService.MaxRequestsPerWindow + 1 // 同時最多執行 MaxRequestsPerWindow + 1 個任務
-                        };
 
 
                         var responseParts = new List<GeminiPart>();
