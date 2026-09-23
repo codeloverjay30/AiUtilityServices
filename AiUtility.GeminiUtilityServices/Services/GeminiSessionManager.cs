@@ -429,46 +429,25 @@ namespace AiUtility.GeminiUtilityServices.Services
                 LogAfterFinishExecutingTool(_logger , "ExecuteWithToolSupportAsync" , _conversationManager.LastTotalTokens);
             }
 
-            if(currentStep >= maxSteps)
-            {
-                message = string.Format(AiUtility.AiBaseUtilityServices.Consts.Constants.Messages.FailureMessages.MAX_STEPS_REACHED_FORMAT , maxSteps).AsMemory();
-                var messageStr = message.ToString();
-                LogFailureWhenExecutingTool(_logger , messageStr);
-                statusJsonModel.IsSuccess = false;
-                statusJsonModel.Result = messageStr;
-                statusJsonModel.OverallErrorMessage = messageStr;
-                statusJsonModel.ErrorMessage = messageStr;
-                statusJsonModel.DetailedErrorMessage = messageStr;
-                statusJsonModels.StatusList.Add(statusJsonModel);
-                p = new TProgress
-                {
-                    Percentage = ProgressBars.COMPLETED_PERCENTAGE,
-                    CurrentStep = currentStep,
-                    MaxSteps = maxSteps,
-                    CurrentAction = Constants.ExecutionStatus.ERROR,
-                    Metadata = settings.Metadata != null
-                        ? new Dictionary<string, string>(settings.Metadata) : new(),
-                };
-                progressBar?.Report(p);
-                return statusJsonModels;
-            }
-
-
+            message = string.Format(AiUtility.AiBaseUtilityServices.Consts.Constants.Messages.FailureMessages.MAX_STEPS_REACHED_FORMAT , maxSteps).AsMemory();
+            var messageStr = message.ToString();
+            LogFailureWhenExecutingTool(_logger , messageStr);
+            statusJsonModel.IsSuccess = false;
+            statusJsonModel.Result = messageStr;
+            statusJsonModel.OverallErrorMessage = messageStr;
+            statusJsonModel.ErrorMessage = messageStr;
+            statusJsonModel.DetailedErrorMessage = messageStr;
+            statusJsonModels.StatusList.Add(statusJsonModel);
             p = new TProgress
             {
-                Percentage = AiUtility.AiBaseUtilityServices.Consts.Constants.ProgressBars.COMPLETED_PERCENTAGE ,
-                CurrentStep = currentStep ,
-                MaxSteps = maxSteps ,
-                CurrentAction = AiUtility.AiBaseUtilityServices.Consts.Constants.ExecutionStatus.AI_COMPLETES_TASK ,
-                Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
+                Percentage = ProgressBars.COMPLETED_PERCENTAGE,
+                CurrentStep = currentStep,
+                MaxSteps = maxSteps,
+                CurrentAction = Constants.ExecutionStatus.ERROR,
+                Metadata = settings.Metadata != null
+                    ? new Dictionary<string, string>(settings.Metadata) : new(),
             };
-
-            statusJsonModel.IsSuccess = true;
-            statusJsonModel.Result = Constants.ExecutionStatus.AI_COMPLETES_TASK;
-            statusJsonModel.OverallErrorMessage = string.Empty;
-            statusJsonModel.ErrorMessage = string.Empty;
-            statusJsonModel.DetailedErrorMessage = string.Empty;
-            statusJsonModels.StatusList.Add(statusJsonModel);
+            progressBar?.Report(p);
             return statusJsonModels;
         }
 
@@ -756,45 +735,24 @@ namespace AiUtility.GeminiUtilityServices.Services
                 LogAfterFinishExecutingTool(_logger , "ExecuteWithToolSupportAsync" , _conversationManager.LastTotalTokens);
             }
 
-            if(currentStep >= maxSteps)
-            {
-                var messageStr = string.Format(AiUtility.AiBaseUtilityServices.Consts.Constants.Messages.FailureMessages.MAX_STEPS_REACHED_FORMAT , maxSteps);
-                LogFailureWhenExecutingTool(_logger , messageStr);
-                statusJsonModel.IsSuccess = false;
-                statusJsonModel.Result = messageStr;
-                statusJsonModel.OverallErrorMessage = messageStr;
-                statusJsonModel.ErrorMessage = messageStr;
-                statusJsonModel.DetailedErrorMessage = messageStr;
-                statusJsonModels.StatusList.Add(statusJsonModel);
-                p = new TProgress
-                {
-                    Percentage = ProgressBars.COMPLETED_PERCENTAGE,
-                    CurrentStep = currentStep,
-                    MaxSteps = maxSteps,
-                    CurrentAction = Constants.ExecutionStatus.ERROR,
-                    Metadata = settings.Metadata != null
-                        ? new Dictionary<string, string>(settings.Metadata) : new(),
-                };
-                progressBar?.Report(p);
-                return statusJsonModels;
-            }
-
-
+            var messageStr = string.Format(AiUtility.AiBaseUtilityServices.Consts.Constants.Messages.FailureMessages.MAX_STEPS_REACHED_FORMAT , maxSteps);
+            LogFailureWhenExecutingTool(_logger , messageStr);
+            statusJsonModel.IsSuccess = false;
+            statusJsonModel.Result = messageStr;
+            statusJsonModel.OverallErrorMessage = messageStr;
+            statusJsonModel.ErrorMessage = messageStr;
+            statusJsonModel.DetailedErrorMessage = messageStr;
+            statusJsonModels.StatusList.Add(statusJsonModel);
             p = new TProgress
             {
-                Percentage = AiUtility.AiBaseUtilityServices.Consts.Constants.ProgressBars.COMPLETED_PERCENTAGE ,
-                CurrentStep = currentStep ,
-                MaxSteps = maxSteps ,
-                CurrentAction = AiUtility.AiBaseUtilityServices.Consts.Constants.ExecutionStatus.AI_COMPLETES_TASK ,
-                Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
+                Percentage = ProgressBars.COMPLETED_PERCENTAGE,
+                CurrentStep = currentStep,
+                MaxSteps = maxSteps,
+                CurrentAction = Constants.ExecutionStatus.ERROR,
+                Metadata = settings.Metadata != null
+                    ? new Dictionary<string, string>(settings.Metadata) : new(),
             };
-
-            statusJsonModel.IsSuccess = true;
-            statusJsonModel.Result = Constants.ExecutionStatus.AI_COMPLETES_TASK;
-            statusJsonModel.OverallErrorMessage = string.Empty;
-            statusJsonModel.ErrorMessage = string.Empty;
-            statusJsonModel.DetailedErrorMessage = string.Empty;
-            statusJsonModels.StatusList.Add(statusJsonModel);
+            progressBar?.Report(p);
             return statusJsonModels;
         }
 
