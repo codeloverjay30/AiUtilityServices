@@ -76,6 +76,22 @@ namespace AiUtility.GeminiUtilityServices.Services
             bool hasText);
 
         /// <summary>
+        /// Logs the final textual response returned by Gemini.
+        /// </summary>
+        /// <param name="logger">
+        /// The logger instance.
+        /// </param>
+        /// <param name="message">
+        /// The final textual response.
+        /// </param>
+        [LoggerMessage(
+            Level = LogLevel.Information,
+            Message = "Gemini final response: {Message}")]
+        private static partial void LogGeminiFinalResponse(
+            ILogger logger,
+            string message);
+
+        /// <summary>
         /// Logs an exception that occurs while executing a Gemini tool.
         /// </summary>
         /// <param name="logger">
@@ -301,6 +317,11 @@ namespace AiUtility.GeminiUtilityServices.Services
                         message = textPart.RawText;
                         statusJsonModel.IsSuccess = true;
                         statusJsonModel.Result = message.ToString();
+                        var finalMessage = statusJsonModel.Result;
+                        var logMessage = finalMessage.Length <= 500
+                            ? finalMessage
+                            : string.Concat(finalMessage.AsSpan(0, 500), "...");
+                        LogGeminiFinalResponse(_logger, logMessage);
                         statusJsonModels.StatusList.Add(statusJsonModel);
                         progressBar?.Report(p);
                         return statusJsonModels;
@@ -619,6 +640,11 @@ namespace AiUtility.GeminiUtilityServices.Services
                         request.Contents.Add(candidate.Content);
                         statusJsonModel.IsSuccess = true;
                         statusJsonModel.Result = textPart.RawText.ToString();
+                        var finalMessage = statusJsonModel.Result;
+                        var logMessage = finalMessage.Length <= 500
+                            ? finalMessage
+                            : string.Concat(finalMessage.AsSpan(0, 500), "...");
+                        LogGeminiFinalResponse(_logger, logMessage);
                         statusJsonModels.StatusList.Add(statusJsonModel);
                         progressBar?.Report(p);
                         return statusJsonModels;
