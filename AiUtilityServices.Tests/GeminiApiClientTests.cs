@@ -1,4 +1,5 @@
-﻿using AiUtility.AiBaseUtilityServices.Services;
+﻿using FluentAssertions;
+using AiUtility.AiBaseUtilityServices.Services;
 using AiUtility.GeminiUtilityServices.Configs;
 using AiUtility.GeminiUtilityServices.Models;
 using AiUtility.GeminiUtilityServices.Services;
@@ -23,19 +24,33 @@ namespace AiUtility.Configurations.Tests
 
         private const string TestApiKey = "gen-lang-client-0455493629s";
 
-        private Mock<ILoggerFactoryBaseUtilityService> _mockLoggerFactory;
-        private Mock<ILogger<GeminiApiClient>> _mockLogger;
+        private Mock<ILoggerFactoryBaseUtilityService> _loggerFactoryServiceMock;
+        private Mock<ILogger> _loggerMock;
 
         [SetUp]
         public void Setup()
         {
-            _mockLogger = new Mock<ILogger<GeminiApiClient>>();
-            _mockLoggerFactory = new Mock<ILoggerFactoryBaseUtilityService>();
+            _loggerMock =
+                new Mock<ILogger>(
+                    MockBehavior.Loose);
 
-            _mockLoggerFactory
-                .Setup(x => x.LoggerFactory.CreateLogger(It.IsAny<string>()))
-                .Returns(_mockLogger.Object);
+            _loggerFactoryServiceMock =
+                new Mock<ILoggerFactoryBaseUtilityService>(
+                    MockBehavior.Strict);
 
+            _loggerFactoryServiceMock
+                .SetupGet(
+                    service =>
+                        service.Logger)
+                .Returns(
+                    _loggerMock.Object);
+
+            _loggerFactoryServiceMock
+                .SetupGet(
+                    service =>
+                        service.IsLoggerCreated)
+                .Returns(
+                    true);
 
         }
 
@@ -54,7 +69,7 @@ namespace AiUtility.Configurations.Tests
                       {
                         "text": "Response from AI",
                         "inline_data": null,
-                        "function_call": null,
+                        "functionCall": null,
                         "function_response": null
                       }
                     ]
@@ -69,7 +84,7 @@ namespace AiUtility.Configurations.Tests
             var expectedResponse = JsonSerializer.Deserialize<GeminiResponse>(expectedResponseStr , _options);
             var expectedResult = JsonSerializer.Serialize<GeminiResponse>(expectedResponse , _options);
 
-            var mockResult = 
+            var mockResult =
             handlerMock
                .Protected()
                .Setup<Task<HttpResponseMessage>>(
@@ -88,8 +103,8 @@ namespace AiUtility.Configurations.Tests
                });
 
             var httpClient = new HttpClient(handlerMock.Object);
-  
-            var client = new GeminiApiClient(_mockLoggerFactory.Object , toLogWhenSuccess: false)
+
+            var client = new GeminiApiClient(_loggerFactoryServiceMock.Object , toLogWhenSuccess: false)
             {
                 HttpClient = httpClient,
                 ApiKey = TestApiKey,
@@ -100,7 +115,7 @@ namespace AiUtility.Configurations.Tests
             };
 
             var request = new GeminiGenerateRequest();
-          
+
             byte [ ] fakeImage = { 0x01 , 0x02 , 0x03 };
             string expectedBase64 = Convert.ToBase64String(fakeImage);
 
@@ -108,12 +123,12 @@ namespace AiUtility.Configurations.Tests
             // Act
             var response = await client.GenerateContentAsync(request);
             var result = JsonSerializer.Serialize<GeminiResponse>(response,_options);
-            // Assert (使用 NUnit 語法)
+            // Assert
             TestContext.WriteLine(response);
             TestContext.WriteLine(result);
             TestContext.WriteLine(expectedResponse);
 
-            Assert.That(result , Is.EqualTo(expectedResult));
+            result.Should().Be(expectedResult);
 
             handlerMock.Protected().Verify(
                "SendAsync" ,
@@ -126,7 +141,7 @@ namespace AiUtility.Configurations.Tests
         }
 
         [Test]
-        public async Task GenerateContentAsync_ApiError_ThrowsException()
+        public void GenerateContentAsync_ApiError_ThrowsException()
         {
             // Arrange
             var handlerMock = new Mock<HttpMessageHandler>();
@@ -143,7 +158,7 @@ namespace AiUtility.Configurations.Tests
                    Content = new StringContent("Invalid Request")
                });
 
-            var client = new GeminiApiClient(_mockLoggerFactory.Object , false)
+            var client = new GeminiApiClient(_loggerFactoryServiceMock.Object , false)
             {
                 HttpClient = new HttpClient(handlerMock.Object),
                 ApiKey = TestApiKey,
@@ -157,9 +172,9 @@ namespace AiUtility.Configurations.Tests
 
             request.AddUserMessage("Error Test".AsMemory());
 
-            // Act & Assert (使用 NUnit 語法)
-            Assert.ThrowsAsync<HttpRequestException>(async () =>
-                await client.GenerateContentAsync(request));
+            // Act & Assert
+            Action act = () => client.GenerateContentAsync(request).GetAwaiter().GetResult();
+            act.Should().Throw<HttpRequestException>().WithMessage("*BadRequest, content: Invalid Request");
         }
     }
 }
