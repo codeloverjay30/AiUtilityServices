@@ -438,6 +438,16 @@ namespace AiUtility.GeminiUtilityServices.Services
                 statusJsonModel.ErrorMessage = messageStr;
                 statusJsonModel.DetailedErrorMessage = messageStr;
                 statusJsonModels.StatusList.Add(statusJsonModel);
+                p = new TProgress
+                {
+                    Percentage = ProgressBars.COMPLETED_PERCENTAGE,
+                    CurrentStep = currentStep,
+                    MaxSteps = maxSteps,
+                    CurrentAction = Constants.ExecutionStatus.ERROR,
+                    Metadata = settings.Metadata != null
+                        ? new Dictionary<string, string>(settings.Metadata) : new(),
+                };
+                progressBar?.Report(p);
                 return statusJsonModels;
             }
 
@@ -752,6 +762,16 @@ namespace AiUtility.GeminiUtilityServices.Services
                 statusJsonModel.ErrorMessage = messageStr;
                 statusJsonModel.DetailedErrorMessage = messageStr;
                 statusJsonModels.StatusList.Add(statusJsonModel);
+                p = new TProgress
+                {
+                    Percentage = ProgressBars.COMPLETED_PERCENTAGE,
+                    CurrentStep = currentStep,
+                    MaxSteps = maxSteps,
+                    CurrentAction = Constants.ExecutionStatus.ERROR,
+                    Metadata = settings.Metadata != null
+                        ? new Dictionary<string, string>(settings.Metadata) : new(),
+                };
+                progressBar?.Report(p);
                 return statusJsonModels;
             }
 
