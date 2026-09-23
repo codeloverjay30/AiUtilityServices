@@ -1,17 +1,10 @@
 ﻿using AiUtility.AiBaseUtilityServices.Services;
 using AiUtility.GeminiKits.Abstractions;
-using AiUtility.GeminiUtilityServices.DataAnnotations;
+using AiUtility.GeminiKits.Models;
 using AiUtility.GeminiUtilityServices.Models;
 using AiUtility.ToolKits.Abstractions;
-using JsonUtilityServices;
 using LoggerFactoryUtilityServices;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
-using static AiUtility.GeminiUtilityServices.Models.GeminiGenerateRequest;
 
 namespace AiUtility.GeminiUtilityServices.Services
 {
@@ -19,17 +12,17 @@ namespace AiUtility.GeminiUtilityServices.Services
     /// Synchronizes registered Gemini tools to generation requests.
     /// </summary>
     public partial class GeminiToolService(
-        IGeminiToolRegistry registry ,
+        IGeminiToolRegistry registry,
         IAiToolConverter<object> converter,
-        ILoggerFactoryBaseUtilityService loggerFactoryService ,
-        bool toLogWhenSuccess
-    ) :
-        AiBaseUtilityService(
-            loggerFactoryService ,
-            toLogWhenSuccess
-        ), IGeminiToolService
+        ILoggerFactoryBaseUtilityService loggerFactoryService,
+        bool toLogWhenSuccess)
+        : AiBaseUtilityService(
+            loggerFactoryService,
+            toLogWhenSuccess),
+          IGeminiToolService
     {
-        private readonly ILogger _logger = loggerFactoryService.Logger;
+        private readonly ILogger _logger =
+            loggerFactoryService.Logger;
 
         /// <summary>
         /// Logs the number of Gemini tool declarations synchronized to a request.
@@ -48,39 +41,55 @@ namespace AiUtility.GeminiUtilityServices.Services
             Level = LogLevel.Warning,
             Message =
                 "No Gemini tools are registered. Gemini cannot perform tool execution.")]
-        private static partial void LogNoGeminiTools(ILogger logger);
+        private static partial void LogNoGeminiTools(
+            ILogger logger);
 
         /// <summary>
         /// Synchronizes all registered tool declarations to the Gemini request.
         /// </summary>
-        /// <param name="request">The Gemini request to update.</param>
-        public void SyncToolsToRequest(GeminiGenerateRequest request)
+        /// <param name="request">
+        /// The Gemini request to update.
+        /// </param>
+        public void SyncToolsToRequest(
+            GeminiGenerateRequest request)
         {
-            ArgumentNullException.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(
+                request);
 
-            var declarations = registry.GetAllTools()
-                .Select(metadata => converter.ToToolDeclaration(metadata))
-                .ToList();
+            var declarations =
+                registry
+                    .GetAllTools()
+                    .Select(
+                        metadata =>
+                            converter.ToToolDeclaration(
+                                metadata))
+                    .ToList();
 
-            LogGeminiToolCount(_logger, declarations.Count);
+            LogGeminiToolCount(
+                _logger,
+                declarations.Count);
 
             if (declarations.Count == 0)
             {
-                LogNoGeminiTools(_logger);
+                LogNoGeminiTools(
+                    _logger);
+
                 request.Tools = [];
+
                 return;
             }
 
-            if(declarations.Any())
-            {
-                request.Tools = new List<GeminiToolDeclarationWrapper>
+            request.Tools =
+            [
+                new GeminiGenerateRequest
+                    .GeminiToolDeclarationWrapper
                 {
-                    new GeminiToolDeclarationWrapper { FunctionDeclarations = declarations
-                        .Select(declaration =>
-                            (AiUtility.GeminiKits.Models.GeminiToolDeclaration)declaration)
-                        .ToList() }
-                };
-            }
+                    FunctionDeclarations =
+                        declarations.Select(
+                            declaration =>
+                                (GeminiToolDeclaration)declaration).ToList()
+                }
+            ];
         }
     }
 }
