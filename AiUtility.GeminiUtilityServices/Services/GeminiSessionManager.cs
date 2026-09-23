@@ -428,7 +428,7 @@ namespace AiUtility.GeminiUtilityServices.Services
             }
             finally
             {
-
+                LogAfterFinishExecutingTool(_logger , "ExecuteWithToolSupportAsync" , _conversationManager.LastTotalTokens);
             }
 
             if(currentStep >= maxSteps)
@@ -455,7 +455,6 @@ namespace AiUtility.GeminiUtilityServices.Services
                 Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
             };
 
-            LogAfterFinishExecutingTool(_logger , "ExecuteWithToolSupportAsync" , _conversationManager.LastTotalTokens);
             statusJsonModel.IsSuccess = true;
             statusJsonModel.Result = Constants.ExecutionStatus.AI_COMPLETES_TASK;
             statusJsonModel.OverallErrorMessage = string.Empty;
@@ -748,7 +747,7 @@ namespace AiUtility.GeminiUtilityServices.Services
             }
             finally
             {
-
+                LogAfterFinishExecutingTool(_logger , "ExecuteWithToolSupportAsync" , _conversationManager.LastTotalTokens);
             }
 
             if(currentStep >= maxSteps)
@@ -774,7 +773,6 @@ namespace AiUtility.GeminiUtilityServices.Services
                 Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
             };
 
-            LogAfterFinishExecutingTool(_logger , "ExecuteWithToolSupportAsync" , _conversationManager.LastTotalTokens);
             statusJsonModel.IsSuccess = true;
             statusJsonModel.Result = Constants.ExecutionStatus.AI_COMPLETES_TASK;
             statusJsonModel.OverallErrorMessage = string.Empty;
