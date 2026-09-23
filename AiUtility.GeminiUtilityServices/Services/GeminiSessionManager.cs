@@ -407,7 +407,9 @@ namespace AiUtility.GeminiUtilityServices.Services
                         Result = AiUtility.AiBaseUtilityServices.Consts.Constants.Messages.FailureMessages.AI_API_RUNTIME_EXCEPTION_WITH_DETAILS ,
                         OverallErrorMessage = Constants.Messages.FailureMessages.AI_API_RUNTIME_EXCEPTION ,
                         ErrorMessage = ex.Message ,
-                        DetailedErrorMessage = new ExceptionFactory(ex).Create()
+                        DetailedErrorMessage = new ExceptionFactory(ex).Create(),
+                        Metadata = settings.Metadata != null
+                            ? new Dictionary<string, string>(settings.Metadata) : new(),
                     });
                 });
 
@@ -732,7 +734,9 @@ namespace AiUtility.GeminiUtilityServices.Services
                         Result = AiUtility.AiBaseUtilityServices.Consts.Constants.Messages.FailureMessages.AI_API_RUNTIME_EXCEPTION_WITH_DETAILS ,
                         OverallErrorMessage = Constants.Messages.FailureMessages.AI_API_RUNTIME_EXCEPTION ,
                         ErrorMessage = ex.Message ,
-                        DetailedErrorMessage = new ExceptionFactory(ex).Create()
+                        DetailedErrorMessage = new ExceptionFactory(ex).Create(),
+                        Metadata = settings.Metadata != null
+                            ? new Dictionary<string, string>(settings.Metadata) : new(),
                     });
                 });
 
