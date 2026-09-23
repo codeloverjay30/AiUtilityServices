@@ -190,6 +190,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                     "User task cannot be empty.", nameof(userTask));
             }
 
+            var workflowStatus = WorkflowCompletionStatus.InProgress;
             var maxSteps = Math.Min(settings.MaxSteps, Constants.ExecutionSettings.MAX_STEPS);
 
             StatusJsonModels statusJsonModels = new StatusJsonModels();
@@ -197,7 +198,7 @@ namespace AiUtility.GeminiUtilityServices.Services
             {
                 CategoryName = "ExecuteWithToolSupportAsync" ,
                 Description = Constants.Executions.Descriptions.EXECUTE_WITH_TOOL_SUPPORT_ASYNC_DESCRIPTION ,
-                Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
+                Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
             };
 
             var message = ReadOnlyMemory<char>.Empty;
@@ -209,7 +210,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                 CurrentStep = currentStep ,
                 MaxSteps = maxSteps ,
                 CurrentAction = Constants.ToolTasks.PREPARE_TO_EXECUTE_TASK ,
-                Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
+                Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
             };
             try
             {
@@ -241,7 +242,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                         CurrentStep = currentStep ,
                         MaxSteps = maxSteps ,
                         CurrentAction = Constants.ToolTasks.PREPARE_TO_SEND_PROMPT_TO_AI_MODEL ,
-                        Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
+                        Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
                     };
                     progressBar?.Report(p);
 
@@ -258,7 +259,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                         CurrentStep = currentStep ,
                         MaxSteps = maxSteps ,
                         CurrentAction = string.Format(Constants.ToolTasks.AI_EXECUTING_TASK , "ExecuteWithToolSupportAsync") ,
-                        Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
+                        Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
                     };
 
                     progressBar?.Report(p);
@@ -271,11 +272,13 @@ namespace AiUtility.GeminiUtilityServices.Services
                     {
                         const string errorMessage =
                             Constants.Messages.FailureMessages.AI_RETURNS_NULL_RESPONSE;
+                        workflowStatus = WorkflowCompletionStatus.Failed;
                         statusJsonModel.IsSuccess = false;
                         statusJsonModel.Result = Constants.ExecutionStatus.ERROR;
                         statusJsonModel.OverallErrorMessage = errorMessage;
                         statusJsonModel.ErrorMessage = errorMessage;
                         statusJsonModel.DetailedErrorMessage = errorMessage;
+                        statusJsonModel.Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown);
                         statusJsonModels.StatusList.Add(statusJsonModel);
 
                         p = new TProgress
@@ -285,8 +288,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                             CurrentStep = currentStep,
                             MaxSteps = maxSteps,
                             CurrentAction = Constants.ExecutionStatus.ERROR,
-                            Metadata = settings.Metadata != null
-                                ? new Dictionary<string, string>(settings.Metadata) : new(),
+                            Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown),
                         };
                         progressBar?.Report(p);
                         return statusJsonModels;
@@ -302,6 +304,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                     LogGeminiResponseStructure(_logger, parts.Count, functionCalls.Count, textPart is not null);
                     if(functionCalls.Count == 0 && candidate != null && textPart is not null)
                     {
+                        workflowStatus = WorkflowCompletionStatus.Completed;
                         // AI 給了答案
 
                         // 在回傳前，別忘了把 AI 的最後這句話也加入對話紀錄，保持 Session 連貫
@@ -311,7 +314,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                             CurrentStep = currentStep ,
                             MaxSteps = maxSteps ,
                             CurrentAction = Constants.ExecutionStatus.AI_COMPLETES_TASK ,
-                            Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
+                            Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
                         };
                         request.AddMessage(candidate.Content);
                         message = textPart.RawText;
@@ -322,6 +325,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                             ? finalMessage
                             : string.Concat(finalMessage.AsSpan(0, 500), "...");
                         LogGeminiFinalResponse(_logger, logMessage);
+                        statusJsonModel.Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown);
                         statusJsonModels.StatusList.Add(statusJsonModel);
                         progressBar?.Report(p);
                         return statusJsonModels;
@@ -370,11 +374,13 @@ namespace AiUtility.GeminiUtilityServices.Services
                     const string unsupportedResponseMessage =
                         "Gemini returned neither a function call nor textual content.";
                     LogFailureWhenExecutingTool(_logger, unsupportedResponseMessage);
+                    workflowStatus = WorkflowCompletionStatus.Failed;
                     statusJsonModel.IsSuccess = false;
                     statusJsonModel.Result = Constants.ExecutionStatus.ERROR;
                     statusJsonModel.OverallErrorMessage = unsupportedResponseMessage;
                     statusJsonModel.ErrorMessage = unsupportedResponseMessage;
                     statusJsonModel.DetailedErrorMessage = unsupportedResponseMessage;
+                    statusJsonModel.Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown);
                     statusJsonModels.StatusList.Add(statusJsonModel);
 
                     p = new TProgress
@@ -383,8 +389,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                         CurrentStep = currentStep,
                         MaxSteps = maxSteps,
                         CurrentAction = Constants.ExecutionStatus.ERROR,
-                        Metadata = settings.Metadata != null
-                            ? new Dictionary<string, string>(settings.Metadata) : new(),
+                        Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown),
                     };
                     progressBar?.Report(p);
                     return statusJsonModels;
@@ -397,6 +402,7 @@ namespace AiUtility.GeminiUtilityServices.Services
             }
             catch(Exception exception)
             {
+                workflowStatus = WorkflowCompletionStatus.Failed;
                 var exceptionUtilityService = new ExceptionHandlingUtilityServices.ExceptionUtilityService(exception);
                 exceptionUtilityService.FlattenAndProcess((ex) =>
                 {
@@ -408,8 +414,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                         OverallErrorMessage = Constants.Messages.FailureMessages.AI_API_RUNTIME_EXCEPTION ,
                         ErrorMessage = ex.Message ,
                         DetailedErrorMessage = new ExceptionFactory(ex).Create(),
-                        Metadata = settings.Metadata != null
-                            ? new Dictionary<string, string>(settings.Metadata) : new(),
+                        Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown),
                     });
                 });
 
@@ -419,7 +424,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                     CurrentStep = currentStep ,
                     MaxSteps = maxSteps ,
                     CurrentAction = Constants.ExecutionStatus.ERROR ,
-                    Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
+                    Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
                 };
                 progressBar?.Report(p);
                 return statusJsonModels;
@@ -432,11 +437,13 @@ namespace AiUtility.GeminiUtilityServices.Services
             message = string.Format(AiUtility.AiBaseUtilityServices.Consts.Constants.Messages.FailureMessages.MAX_STEPS_REACHED_FORMAT , maxSteps).AsMemory();
             var messageStr = message.ToString();
             LogFailureWhenExecutingTool(_logger , messageStr);
+            workflowStatus = WorkflowCompletionStatus.Failed;
             statusJsonModel.IsSuccess = false;
             statusJsonModel.Result = messageStr;
             statusJsonModel.OverallErrorMessage = messageStr;
             statusJsonModel.ErrorMessage = messageStr;
             statusJsonModel.DetailedErrorMessage = messageStr;
+            statusJsonModel.Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown);
             statusJsonModels.StatusList.Add(statusJsonModel);
             p = new TProgress
             {
@@ -444,8 +451,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                 CurrentStep = currentStep,
                 MaxSteps = maxSteps,
                 CurrentAction = Constants.ExecutionStatus.ERROR,
-                Metadata = settings.Metadata != null
-                    ? new Dictionary<string, string>(settings.Metadata) : new(),
+                Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown),
             };
             progressBar?.Report(p);
             return statusJsonModels;
@@ -502,6 +508,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                     "User task cannot be empty.", nameof(userTask));
             }
 
+            var workflowStatus = WorkflowCompletionStatus.InProgress;
             var maxSteps = Math.Min(settings.MaxSteps, Constants.ExecutionSettings.MAX_STEPS);
 
             StatusJsonModels statusJsonModels = new StatusJsonModels();
@@ -509,7 +516,7 @@ namespace AiUtility.GeminiUtilityServices.Services
             {
                 CategoryName = "ExecuteWithToolSupportAsync" ,
                 Description = Constants.Executions.Descriptions.EXECUTE_WITH_TOOL_SUPPORT_ASYNC_DESCRIPTION ,
-                Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
+                Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
             };
 
             var message = ReadOnlyMemory<char>.Empty;
@@ -521,7 +528,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                 CurrentStep = currentStep ,
                 MaxSteps = maxSteps ,
                 CurrentAction = Constants.ToolTasks.PREPARE_TO_EXECUTE_TASK ,
-                Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
+                Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
             };
             try
             {
@@ -553,7 +560,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                         CurrentStep = currentStep ,
                         MaxSteps = maxSteps ,
                         CurrentAction = Constants.ToolTasks.PREPARE_TO_SEND_PROMPT_TO_AI_MODEL ,
-                        Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
+                        Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
                     };
                     progressBar?.Report(p);
 
@@ -570,7 +577,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                         CurrentStep = currentStep ,
                         MaxSteps = maxSteps ,
                         CurrentAction = string.Format(Constants.ToolTasks.AI_EXECUTING_TASK , "ExecuteWithToolSupportAsync") ,
-                        Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
+                        Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
                     };
 
                     progressBar?.Report(p);
@@ -583,11 +590,13 @@ namespace AiUtility.GeminiUtilityServices.Services
                     {
                         const string errorMessage =
                             Constants.Messages.FailureMessages.AI_RETURNS_NULL_RESPONSE;
+                        workflowStatus = WorkflowCompletionStatus.Failed;
                         statusJsonModel.IsSuccess = false;
                         statusJsonModel.Result = Constants.ExecutionStatus.ERROR;
                         statusJsonModel.OverallErrorMessage = errorMessage;
                         statusJsonModel.ErrorMessage = errorMessage;
                         statusJsonModel.DetailedErrorMessage = errorMessage;
+                        statusJsonModel.Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown);
                         statusJsonModels.StatusList.Add(statusJsonModel);
 
                         p = new TProgress
@@ -597,8 +606,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                             CurrentStep = currentStep,
                             MaxSteps = maxSteps,
                             CurrentAction = Constants.ExecutionStatus.ERROR,
-                            Metadata = settings.Metadata != null
-                                ? new Dictionary<string, string>(settings.Metadata) : new(),
+                            Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown),
                         };
                         progressBar?.Report(p);
                         return statusJsonModels;
@@ -614,6 +622,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                     LogGeminiResponseStructure(_logger, parts.Count, functionCalls.Count, textPart is not null);
                     if(functionCalls.Count == 0 && candidate != null && textPart is not null)
                     {
+                        workflowStatus = WorkflowCompletionStatus.Completed;
                         // 在回傳前，別忘了把 AI 的最後這句話也加入對話紀錄，保持 Session 連貫
                         p = new TProgress
                         {
@@ -621,7 +630,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                             CurrentStep = currentStep ,
                             MaxSteps = maxSteps ,
                             CurrentAction = Constants.ExecutionStatus.AI_COMPLETES_TASK ,
-                            Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
+                            Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
                         };
                         request.Contents.Add(candidate.Content);
                         statusJsonModel.IsSuccess = true;
@@ -631,6 +640,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                             ? finalMessage
                             : string.Concat(finalMessage.AsSpan(0, 500), "...");
                         LogGeminiFinalResponse(_logger, logMessage);
+                        statusJsonModel.Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown);
                         statusJsonModels.StatusList.Add(statusJsonModel);
                         progressBar?.Report(p);
                         return statusJsonModels;
@@ -676,11 +686,13 @@ namespace AiUtility.GeminiUtilityServices.Services
                     const string unsupportedResponseMessage =
                         "Gemini returned neither a function call nor textual content.";
                     LogFailureWhenExecutingTool(_logger, unsupportedResponseMessage);
+                    workflowStatus = WorkflowCompletionStatus.Failed;
                     statusJsonModel.IsSuccess = false;
                     statusJsonModel.Result = Constants.ExecutionStatus.ERROR;
                     statusJsonModel.OverallErrorMessage = unsupportedResponseMessage;
                     statusJsonModel.ErrorMessage = unsupportedResponseMessage;
                     statusJsonModel.DetailedErrorMessage = unsupportedResponseMessage;
+                    statusJsonModel.Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown);
                     statusJsonModels.StatusList.Add(statusJsonModel);
 
                     p = new TProgress
@@ -689,8 +701,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                         CurrentStep = currentStep,
                         MaxSteps = maxSteps,
                         CurrentAction = Constants.ExecutionStatus.ERROR,
-                        Metadata = settings.Metadata != null
-                            ? new Dictionary<string, string>(settings.Metadata) : new(),
+                        Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown),
                     };
                     progressBar?.Report(p);
                     return statusJsonModels;
@@ -703,6 +714,7 @@ namespace AiUtility.GeminiUtilityServices.Services
             }
             catch(Exception exception)
             {
+                workflowStatus = WorkflowCompletionStatus.Failed;
                 var exceptionUtilityService = new ExceptionHandlingUtilityServices.ExceptionUtilityService(exception);
                 exceptionUtilityService.FlattenAndProcess((ex) =>
                 {
@@ -714,8 +726,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                         OverallErrorMessage = Constants.Messages.FailureMessages.AI_API_RUNTIME_EXCEPTION ,
                         ErrorMessage = ex.Message ,
                         DetailedErrorMessage = new ExceptionFactory(ex).Create(),
-                        Metadata = settings.Metadata != null
-                            ? new Dictionary<string, string>(settings.Metadata) : new(),
+                        Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown),
                     });
                 });
 
@@ -725,7 +736,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                     CurrentStep = currentStep ,
                     MaxSteps = maxSteps ,
                     CurrentAction = Constants.ExecutionStatus.ERROR ,
-                    Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
+                    Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
                 };
                 progressBar?.Report(p);
                 return statusJsonModels;
@@ -737,11 +748,13 @@ namespace AiUtility.GeminiUtilityServices.Services
 
             var messageStr = string.Format(AiUtility.AiBaseUtilityServices.Consts.Constants.Messages.FailureMessages.MAX_STEPS_REACHED_FORMAT , maxSteps);
             LogFailureWhenExecutingTool(_logger , messageStr);
+            workflowStatus = WorkflowCompletionStatus.Failed;
             statusJsonModel.IsSuccess = false;
             statusJsonModel.Result = messageStr;
             statusJsonModel.OverallErrorMessage = messageStr;
             statusJsonModel.ErrorMessage = messageStr;
             statusJsonModel.DetailedErrorMessage = messageStr;
+            statusJsonModel.Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown);
             statusJsonModels.StatusList.Add(statusJsonModel);
             p = new TProgress
             {
@@ -749,11 +762,45 @@ namespace AiUtility.GeminiUtilityServices.Services
                 CurrentStep = currentStep,
                 MaxSteps = maxSteps,
                 CurrentAction = Constants.ExecutionStatus.ERROR,
-                Metadata = settings.Metadata != null
-                    ? new Dictionary<string, string>(settings.Metadata) : new(),
+                Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown),
             };
             progressBar?.Report(p);
             return statusJsonModels;
+        }
+
+        /// <summary>
+        /// Creates execution metadata containing workflow and business-task status.
+        /// </summary>
+        /// <param name="source">
+        /// The original execution metadata.
+        /// </param>
+        /// <param name="workflowStatus">
+        /// The current Gemini workflow completion status.
+        /// </param>
+        /// <param name="taskStatus">
+        /// The current business-task execution status.
+        /// </param>
+        /// <returns>
+        /// A new metadata dictionary containing the original values and status information.
+        /// </returns>
+        private static Dictionary<string, string> CreateExecutionMetadata(
+            IReadOnlyDictionary<string, string>? source,
+            WorkflowCompletionStatus workflowStatus,
+            TaskExecutionStatus taskStatus)
+        {
+            var metadata =
+                source is null
+                    ? new Dictionary<string, string>()
+                    : new Dictionary<string, string>(
+                        source);
+
+            metadata["WorkflowStatus"] =
+                workflowStatus.ToString();
+
+            metadata["TaskStatus"] =
+                taskStatus.ToString();
+
+            return metadata;
         }
 
         /// <summary>
