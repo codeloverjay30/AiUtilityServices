@@ -293,8 +293,8 @@ namespace AiUtility.GeminiUtilityServices.Services
                     }
 
                     var functionCalls = parts!
-                        .Where(part => part.FunctionCall != null)
-                        .Select(part => part.FunctionCall)
+                        .Where(static part => part.FunctionCall is not null)
+                        .Select(static part => part.FunctionCall!)
                         .ToList();
 
                     // 4. 檢查是否為文字回應 (AI 給出了最終答案)
@@ -328,7 +328,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                     }
 
                     // 5. 檢查是否為 FunctionCall (AI 要求執行工具)
-                    if(functionCalls != null && functionCalls.Any())
+                    if(functionCalls.Count > 0)
                     {
                         // AI 要求執行工具
 
@@ -343,7 +343,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                             foreach(var call in functionCalls)
                             {
                                 ct.ThrowIfCancellationRequested();
-                                var taskResult = await ExecuteAsync(call! , settings , ct);
+                                var taskResult = await ExecuteAsync(call , settings , ct);
                                 statusJsonModels.StatusList.Add(taskResult.Status);
                                 responseParts.Add(taskResult.Part);
                             }
@@ -353,7 +353,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                             // 並行執行所有的FunctionCall
 
                             // 建立所有執行任務 (並行啟動)
-                            var tasks = functionCalls.Select(call => ExecuteAsync(call! , settings , ct));
+                            var tasks = functionCalls.Select(call => ExecuteAsync(call , settings , ct));
                             // 等待所有工具執行完畢
                             var taskResults = await Task.WhenAll(tasks);
                             statusJsonModels.StatusList.AddRange(taskResults.Select(r => r.Status));
@@ -605,8 +605,8 @@ namespace AiUtility.GeminiUtilityServices.Services
                     }
 
                     var functionCalls = parts!
-                        .Where(part => part.FunctionCall != null)
-                        .Select(part => part.FunctionCall)
+                        .Where(static part => part.FunctionCall is not null)
+                        .Select(static part => part.FunctionCall!)
                         .ToList();
 
                     // 4. 檢查是否為文字回應 (AI 給出了最終答案)
@@ -637,7 +637,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                     }
 
                     // 5. 檢查是否為 FunctionCall (AI 要求執行工具)
-                    if(functionCalls != null && functionCalls.Any())
+                    if(functionCalls.Count > 0)
                     {
                         request = request.WithMessage(candidate.Content);
 
@@ -651,7 +651,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                             foreach(var call in functionCalls)
                             {
                                 ct.ThrowIfCancellationRequested();
-                                var taskResult = await ExecuteAsync(call! , settings , ct);
+                                var taskResult = await ExecuteAsync(call , settings , ct);
                                 statusJsonModels.StatusList.Add(taskResult.Status);
                                 responseParts.Add(taskResult.Part);
                             }
@@ -659,7 +659,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                         else
                         {
                             // 建立所有執行任務 (並行啟動)
-                            var tasks = functionCalls.Select(call => ExecuteAsync(call! , settings , ct));
+                            var tasks = functionCalls.Select(call => ExecuteAsync(call , settings , ct));
                             // 等待所有工具執行完畢
                             var taskResults = await Task.WhenAll(tasks);
                             statusJsonModels.StatusList.AddRange(taskResults.Select(r => r.Status));
