@@ -1,6 +1,7 @@
 ﻿using AiUtility.AiBaseUtilityServices.Consts;
 using AiUtility.AiBaseUtilityServices.Models;
 using AiUtility.GeminiKits.Abstractions;
+using AiUtility.GeminiUtilityServices;
 using AiUtility.GeminiUtilityServices.Models;
 using AiUtility.ToolKits.Abstractions;
 using AiUtility.ToolKits.Executor;
@@ -182,6 +183,7 @@ namespace AiUtility.GeminiUtilityServices.Services
             IProgress<TProgress>? progressBar = null
         ) where TProgress : WorkflowProgress, new() // 限制必須繼承自基礎模型
         {
+
             ArgumentNullException.ThrowIfNull(
                 request);
 
@@ -203,19 +205,32 @@ namespace AiUtility.GeminiUtilityServices.Services
                     nameof(userTask));
             }
 
-            var workflowStatus = WorkflowCompletionStatus.InProgress;
-            var maxSteps = Math.Min(settings.MaxSteps, Constants.ExecutionSettings.MAX_STEPS);
+            WorkflowCompletionStatus workflowStatus =
+                WorkflowCompletionStatus.InProgress;
 
-            StatusJsonModels statusJsonModels = new StatusJsonModels();
+            TaskExecutionStatus taskStatus =
+                TaskExecutionStatus.Unknown;
+
+            StatusJsonModels statusJsonModels =
+                new StatusJsonModels();
             StatusJsonModel statusJsonModel = new StatusJsonModel
             {
                 CategoryName = "ExecuteWithToolSupportAsync" ,
                 Description = Constants.Executions.Descriptions.EXECUTE_WITH_TOOL_SUPPORT_ASYNC_DESCRIPTION ,
-                Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
+                Metadata =
+                    CreateExecutionMetadata(
+                        settings.Metadata,
+                        workflowStatus,
+                        taskStatus),
             };
 
             var message = ReadOnlyMemory<char>.Empty;
             int currentStep = 0;
+
+            var maxSteps =
+                Math.Min(
+                    settings.MaxSteps,
+                    Constants.ExecutionSettings.MAX_STEPS);
 
             var p = new TProgress
             {
@@ -223,15 +238,19 @@ namespace AiUtility.GeminiUtilityServices.Services
                 CurrentStep = currentStep ,
                 MaxSteps = maxSteps ,
                 CurrentAction = Constants.ToolTasks.PREPARE_TO_EXECUTE_TASK ,
-                Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
+                Metadata =
+                    CreateExecutionMetadata(
+                        settings.Metadata,
+                        workflowStatus,
+                        taskStatus),
             };
             try
             {
                 progressBar?.Report(p);
-                LogBeforeStartToExecuteTool(_logger , "ExecuteWithToolSupportAsync" , _conversationManager.LastTotalTokens);
+                LogBeforeStartToExecuteTool(_logger, "ExecuteWithToolSupportAsync", _conversationManager.LastTotalTokens);
                 var valueTask = await _semaphoreService.LockWithTimeoutValueAsync(
-                    ct ,
-                    Constants.Timeouts.DEFAULT_TIMEOUTS ,
+                    ct,
+                    Constants.Timeouts.DEFAULT_TIMEOUTS,
                     false
                 );
 
@@ -242,7 +261,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                 request.AddUserMessage(userTask);
 
                 // 進入執行迴圈（處理潛在的多步 Function Calling）
-                while(currentStep < maxSteps)
+                while (currentStep < maxSteps)
                 {
                     ct.ThrowIfCancellationRequested(); // 確保能立即反應取消請求
                     currentStep++;
@@ -251,118 +270,159 @@ namespace AiUtility.GeminiUtilityServices.Services
 
                     p = new TProgress
                     {
-                        Percentage = (int)((double)(currentStep - 1) / maxSteps * Constants.ProgressBars.COMPLETED_PERCENTAGE) + Constants.ProgressBars.BASE_OFFSET_PERCENTAGE ,
-                        CurrentStep = currentStep ,
-                        MaxSteps = maxSteps ,
-                        CurrentAction = Constants.ToolTasks.PREPARE_TO_SEND_PROMPT_TO_AI_MODEL ,
-                        Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
+                        Percentage = (int)((double)(currentStep - 1) / maxSteps * Constants.ProgressBars.COMPLETED_PERCENTAGE) + Constants.ProgressBars.BASE_OFFSET_PERCENTAGE,
+                        CurrentStep = currentStep,
+                        MaxSteps = maxSteps,
+                        CurrentAction = Constants.ToolTasks.PREPARE_TO_SEND_PROMPT_TO_AI_MODEL,
+                        Metadata =
+                            CreateExecutionMetadata(
+                                settings.Metadata,
+                                workflowStatus,
+                                taskStatus),
                     };
                     progressBar?.Report(p);
 
                     var response = await _conversationManager.SendMessageAsync(
-                        request ,
-                        userTask ,
-                        settings ,
+                        request,
+                        userTask,
+                        settings,
                         ct
                     );
 
                     p = new TProgress
                     {
-                        Percentage = (int)((double)currentStep / maxSteps * ProgressBars.COMPLETED_PERCENTAGE) ,
-                        CurrentStep = currentStep ,
-                        MaxSteps = maxSteps ,
-                        CurrentAction = string.Format(Constants.ToolTasks.AI_EXECUTING_TASK , "ExecuteWithToolSupportAsync") ,
-                        Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
+                        Percentage = (int)((double)currentStep / maxSteps * ProgressBars.COMPLETED_PERCENTAGE),
+                        CurrentStep = currentStep,
+                        MaxSteps = maxSteps,
+                        CurrentAction = string.Format(Constants.ToolTasks.AI_EXECUTING_TASK, "ExecuteWithToolSupportAsync"),
+                        Metadata =
+                            CreateExecutionMetadata(
+                                settings.Metadata,
+                                workflowStatus,
+                                taskStatus),
                     };
 
                     progressBar?.Report(p);
 
-                    var candidate = response?.Candidates?.FirstOrDefault();
-                    var parts = candidate?.Content?.Parts;
-                    var firstPart = parts?.FirstOrDefault();
+                    var candidate =
+                        response?.Candidates?.FirstOrDefault();
 
-                    if (firstPart is null)
+                    var parts =
+                        candidate?.Content?.Parts;
+
+                    if (candidate is null ||
+                        parts is null ||
+                        parts.Count == 0)
                     {
+                        workflowStatus =
+                            WorkflowCompletionStatus.Failed;
+
+                        taskStatus =
+                            TaskExecutionStatus.Unknown;
+
                         const string errorMessage =
-                            Constants.Messages.FailureMessages.AI_RETURNS_NULL_RESPONSE;
-                        workflowStatus = WorkflowCompletionStatus.Failed;
+                            Constants.Messages.FailureMessages
+                                .AI_RETURNS_NULL_RESPONSE;
+
                         statusJsonModel.IsSuccess = false;
-                        statusJsonModel.Result = Constants.ExecutionStatus.ERROR;
-                        statusJsonModel.OverallErrorMessage = errorMessage;
-                        statusJsonModel.ErrorMessage = errorMessage;
-                        statusJsonModel.DetailedErrorMessage = errorMessage;
-                        statusJsonModel.Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown);
-                        statusJsonModels.StatusList.Add(statusJsonModel);
+                        statusJsonModel.Result =
+                            Constants.ExecutionStatus.ERROR;
+                        statusJsonModel.OverallErrorMessage =
+                            errorMessage;
+                        statusJsonModel.ErrorMessage =
+                            errorMessage;
+                        statusJsonModel.DetailedErrorMessage =
+                            errorMessage;
+
+                        statusJsonModel.Metadata =
+                            CreateExecutionMetadata(
+                                settings.Metadata,
+                                workflowStatus,
+                                taskStatus);
+
+                        statusJsonModels.StatusList.Add(
+                            statusJsonModel);
 
                         p = new TProgress
                         {
-                            Percentage = (int)((double)Math.Max(currentStep - 1, 0)
-                                / maxSteps * ProgressBars.COMPLETED_PERCENTAGE),
-                            CurrentStep = currentStep,
-                            MaxSteps = maxSteps,
-                            CurrentAction = Constants.ExecutionStatus.ERROR,
-                            Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown),
+                            Percentage =
+                                (int)(
+                                    (double)Math.Max(currentStep - 1, 0)
+                                    / maxSteps
+                                    * ProgressBars.COMPLETED_PERCENTAGE),
+
+                            CurrentStep =
+                                currentStep,
+
+                            MaxSteps =
+                                maxSteps,
+
+                            CurrentAction =
+                                Constants.ExecutionStatus.ERROR,
+
+                            Metadata =
+                                CreateExecutionMetadata(
+                                    settings.Metadata,
+                                    workflowStatus,
+                                    taskStatus),
                         };
+
                         progressBar?.Report(p);
+
                         return statusJsonModels;
                     }
 
-                    var functionCalls = parts!
-                        .Where(static part => part.FunctionCall is not null)
-                        .Select(static part => part.FunctionCall!)
-                        .ToList();
+                    var functionCalls =
+                        parts
+                            .Where(static part =>
+                                part.FunctionCall is not null)
+                            .Select(static part =>
+                                part.FunctionCall!)
+                            .ToList();
 
-                    // 4. 檢查是否為文字回應 (AI 給出了最終答案)
-                    var textPart = parts.FirstOrDefault(static part => !part.RawText.IsEmpty);
-                    LogGeminiResponseStructure(_logger, parts.Count, functionCalls.Count, textPart is not null);
-                    if(functionCalls.Count == 0 && candidate != null && textPart is not null)
-                    {
-                        workflowStatus = WorkflowCompletionStatus.Completed;
-                        // AI 給了答案
+                    var hasText =
+                        parts.Any(
+                            static part =>
+                                !part.RawText.IsEmpty);
 
-                        // 在回傳前，別忘了把 AI 的最後這句話也加入對話紀錄，保持 Session 連貫
-                        p = new TProgress
-                        {
-                            Percentage = ProgressBars.COMPLETED_PERCENTAGE ,
-                            CurrentStep = currentStep ,
-                            MaxSteps = maxSteps ,
-                            CurrentAction = Constants.ExecutionStatus.AI_COMPLETES_TASK ,
-                            Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
-                        };
-                        request.AddMessage(candidate.Content);
-                        message = textPart.RawText;
-                        statusJsonModel.IsSuccess = true;
-                        statusJsonModel.Result = message.ToString();
-                        var finalMessage = statusJsonModel.Result;
-                        var logMessage = finalMessage.Length <= 500
-                            ? finalMessage
-                            : string.Concat(finalMessage.AsSpan(0, 500), "...");
-                        LogGeminiFinalResponse(_logger, logMessage);
-                        statusJsonModel.Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown);
-                        statusJsonModels.StatusList.Add(statusJsonModel);
-                        progressBar?.Report(p);
-                        return statusJsonModels;
-                    }
+                    LogGeminiResponseStructure(
+                        _logger,
+                        parts.Count,
+                        functionCalls.Count,
+                        hasText);
 
-                    // 5. 檢查是否為 FunctionCall (AI 要求執行工具)
-                    if(functionCalls.Count > 0)
+                    // 檢查是否為 FunctionCall (AI 要求執行工具)
+                    if (functionCalls.Count > 0)
                     {
                         // AI 要求執行工具
+                        workflowStatus =
+                            WorkflowCompletionStatus.InProgress;
+
+                        taskStatus =
+                            TaskExecutionStatus.Unknown;
 
                         request.AddMessage(candidate!.Content);
-
                         var responseParts = new List<GeminiPart>();
 
                         // 判斷是否要分別執行FunctionCall
-                        if(settings.ForceSequentialToolExecution)
+                        if (settings.ForceSequentialToolExecution)
                         {
                             // 需要分別執行FunctionCall
-                            foreach(var call in functionCalls)
+                            foreach (var call in functionCalls)
                             {
                                 ct.ThrowIfCancellationRequested();
-                                var taskResult = await ExecuteAsync(call , settings , ct);
-                                statusJsonModels.StatusList.Add(taskResult.Status);
-                                responseParts.Add(taskResult.Part);
+
+                                var taskResult =
+                                    await ExecuteAsync(
+                                        call,
+                                        settings,
+                                        ct);
+
+                                statusJsonModels.StatusList.Add(
+                                    taskResult.Status);
+
+                                responseParts.Add(
+                                    taskResult.Part);
                             }
                         }
                         else
@@ -370,7 +430,13 @@ namespace AiUtility.GeminiUtilityServices.Services
                             // 並行執行所有的FunctionCall
 
                             // 建立所有執行任務 (並行啟動)
-                            var tasks = functionCalls.Select(call => ExecuteAsync(call , settings , ct));
+                            var tasks =
+                                functionCalls.Select(
+                                    call =>
+                                        ExecuteAsync(
+                                            call,
+                                            settings,
+                                            ct));
                             // 等待所有工具執行完畢
                             var taskResults = await Task.WhenAll(tasks);
                             statusJsonModels.StatusList.AddRange(taskResults.Select(r => r.Status));
@@ -384,89 +450,277 @@ namespace AiUtility.GeminiUtilityServices.Services
                         continue;
 
                     }
+
+                    var textPart =
+                        parts.FirstOrDefault(
+                            static part =>
+                                !part.RawText.IsEmpty);
+
+                    if (textPart is not null)
+                    {
+                        workflowStatus =
+                            WorkflowCompletionStatus.Completed;
+
+                        taskStatus =
+                            TaskExecutionStatus.Unknown;
+
+                        request.AddMessage(
+                            candidate.Content);
+
+                        message =
+                            textPart.RawText;
+
+                        var finalMessage =
+                            message.ToString();
+
+                        var logMessage =
+                            finalMessage.Length <= 500
+                                ? finalMessage
+                                : string.Concat(
+                                    finalMessage.AsSpan(
+                                        0,
+                                        500),
+                                    "...");
+
+                        LogGeminiFinalResponse(
+                            _logger,
+                            logMessage);
+
+                        statusJsonModel.IsSuccess = true;
+
+                        statusJsonModel.Result =
+                            finalMessage;
+
+                        statusJsonModel.OverallErrorMessage =
+                            string.Empty;
+
+                        statusJsonModel.ErrorMessage =
+                            string.Empty;
+
+                        statusJsonModel.DetailedErrorMessage =
+                            string.Empty;
+
+                        statusJsonModel.Metadata =
+                            CreateExecutionMetadata(
+                                settings.Metadata,
+                                workflowStatus,
+                                taskStatus);
+
+                        statusJsonModels.StatusList.Add(
+                            statusJsonModel);
+
+                        p = new TProgress
+                        {
+                            Percentage =
+                                ProgressBars.COMPLETED_PERCENTAGE,
+
+                            CurrentStep =
+                                currentStep,
+
+                            MaxSteps = maxSteps,
+                            CurrentAction =
+                                Constants.ExecutionStatus.AI_COMPLETES_TASK,
+
+                            Metadata =
+                                CreateExecutionMetadata(
+                                    settings.Metadata,
+                                    workflowStatus,
+                                    taskStatus),
+
+                        };
+
+                        progressBar?.Report(
+                            p);
+
+                        return statusJsonModels;
+                    }
+
+                    workflowStatus =
+                        WorkflowCompletionStatus.Failed;
+
+                    taskStatus =
+                        TaskExecutionStatus.Unknown;
+
                     const string unsupportedResponseMessage =
                         "Gemini returned neither a function call nor textual content.";
-                    LogFailureWhenExecutingTool(_logger, unsupportedResponseMessage);
-                    workflowStatus = WorkflowCompletionStatus.Failed;
+
+                    LogFailureWhenExecutingTool(
+                        _logger,
+                        unsupportedResponseMessage);
+
                     statusJsonModel.IsSuccess = false;
-                    statusJsonModel.Result = Constants.ExecutionStatus.ERROR;
-                    statusJsonModel.OverallErrorMessage = unsupportedResponseMessage;
-                    statusJsonModel.ErrorMessage = unsupportedResponseMessage;
-                    statusJsonModel.DetailedErrorMessage = unsupportedResponseMessage;
-                    statusJsonModel.Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown);
-                    statusJsonModels.StatusList.Add(statusJsonModel);
+                    statusJsonModel.Result =
+                        Constants.ExecutionStatus.ERROR;
+                    statusJsonModel.OverallErrorMessage =
+                        unsupportedResponseMessage;
+                    statusJsonModel.ErrorMessage =
+                        unsupportedResponseMessage;
+                    statusJsonModel.DetailedErrorMessage =
+                        unsupportedResponseMessage;
+                    statusJsonModel.Metadata =
+                        CreateExecutionMetadata(
+                            settings.Metadata,
+                            workflowStatus,
+                            taskStatus);
+
+                    statusJsonModels.StatusList.Add(
+                        statusJsonModel);
 
                     p = new TProgress
                     {
-                        Percentage = (int)((double)currentStep / maxSteps * ProgressBars.COMPLETED_PERCENTAGE),
-                        CurrentStep = currentStep,
-                        MaxSteps = maxSteps,
-                        CurrentAction = Constants.ExecutionStatus.ERROR,
-                        Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown),
+                        Percentage =
+                            (int)(
+                                (double)currentStep
+                                / maxSteps
+                                * ProgressBars.COMPLETED_PERCENTAGE),
+
+                        CurrentStep =
+                            currentStep,
+
+                        MaxSteps =
+                            maxSteps,
+
+                        CurrentAction =
+                            Constants.ExecutionStatus.ERROR,
+
+                        Metadata =
+                            CreateExecutionMetadata(
+                                settings.Metadata,
+                                workflowStatus,
+                                taskStatus),
                     };
-                    progressBar?.Report(p);
+
+                    progressBar?.Report(
+                        p);
+
                     return statusJsonModels;
                 }
             }
-            catch(OperationCanceledException)
+            catch (OperationCanceledException)
             {
-                // 讓取消信號正常向外傳遞，不要攔截它
+                workflowStatus =
+                    WorkflowCompletionStatus.Cancelled;
+
+                taskStatus =
+                    TaskExecutionStatus.Unknown;
+
+                // Preserve cancellation semantics for the caller.
                 throw;
             }
-            catch(Exception exception)
+            catch (Exception exception)
             {
-                workflowStatus = WorkflowCompletionStatus.Failed;
+                workflowStatus =
+                    WorkflowCompletionStatus.Failed;
+
+                taskStatus =
+                    TaskExecutionStatus.Unknown;
+
                 var exceptionUtilityService = new ExceptionHandlingUtilityServices.ExceptionUtilityService(exception);
                 exceptionUtilityService.FlattenAndProcess((ex) =>
                 {
-                    LogExceptionWhenExecutingTool(_logger , ex);
+                    LogExceptionWhenExecutingTool(_logger, ex);
                     statusJsonModels.StatusList.Add(new StatusJsonModel()
                     {
-                        IsSuccess = false ,
-                        Result = AiUtility.AiBaseUtilityServices.Consts.Constants.Messages.FailureMessages.AI_API_RUNTIME_EXCEPTION_WITH_DETAILS ,
-                        OverallErrorMessage = Constants.Messages.FailureMessages.AI_API_RUNTIME_EXCEPTION ,
-                        ErrorMessage = ex.Message ,
+                        IsSuccess = false,
+                        Result = AiUtility.AiBaseUtilityServices.Consts.Constants.Messages.FailureMessages.AI_API_RUNTIME_EXCEPTION_WITH_DETAILS,
+                        OverallErrorMessage = Constants.Messages.FailureMessages.AI_API_RUNTIME_EXCEPTION,
+                        ErrorMessage = ex.Message,
                         DetailedErrorMessage = new ExceptionFactory(ex).Create(),
-                        Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown),
+                        Metadata =
+                            CreateExecutionMetadata(
+                                settings.Metadata,
+                                workflowStatus,
+                                taskStatus)
                     });
                 });
 
                 p = new TProgress
                 {
-                    Percentage = (int)((double)(currentStep - 1) / maxSteps * AiUtility.AiBaseUtilityServices.Consts.Constants.ProgressBars.COMPLETED_PERCENTAGE) ,
-                    CurrentStep = currentStep ,
-                    MaxSteps = maxSteps ,
-                    CurrentAction = Constants.ExecutionStatus.ERROR ,
-                    Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
+                    Percentage = (int)((double)(currentStep - 1) / maxSteps * AiUtility.AiBaseUtilityServices.Consts.Constants.ProgressBars.COMPLETED_PERCENTAGE),
+                    CurrentStep = currentStep,
+                    MaxSteps = maxSteps,
+                    CurrentAction = Constants.ExecutionStatus.ERROR,
+                    Metadata =
+                        CreateExecutionMetadata(
+                            settings.Metadata,
+                            workflowStatus,
+                            taskStatus),
                 };
                 progressBar?.Report(p);
+
                 return statusJsonModels;
             }
             finally
             {
-                LogAfterFinishExecutingTool(_logger , "ExecuteWithToolSupportAsync" , _conversationManager.LastTotalTokens);
+                LogAfterFinishExecutingTool(
+                    _logger,
+                    nameof(ExecuteWithToolSupportAsync),
+                    _conversationManager.LastTotalTokens);
             }
 
-            message = string.Format(AiUtility.AiBaseUtilityServices.Consts.Constants.Messages.FailureMessages.MAX_STEPS_REACHED_FORMAT , maxSteps).AsMemory();
-            var messageStr = message.ToString();
-            LogFailureWhenExecutingTool(_logger , messageStr);
-            workflowStatus = WorkflowCompletionStatus.Failed;
+
+            workflowStatus =
+                WorkflowCompletionStatus.Failed;
+
+            taskStatus =
+                TaskExecutionStatus.Unknown;
+
+            message =
+                string.Format(
+                    AiUtility.AiBaseUtilityServices.Consts.Constants
+                        .Messages.FailureMessages.MAX_STEPS_REACHED_FORMAT,
+                    maxSteps)
+                .AsMemory();
+
+            var messageStr =
+                message.ToString();
+
+            LogFailureWhenExecutingTool(
+                _logger,
+                messageStr);
+
             statusJsonModel.IsSuccess = false;
-            statusJsonModel.Result = messageStr;
-            statusJsonModel.OverallErrorMessage = messageStr;
-            statusJsonModel.ErrorMessage = messageStr;
-            statusJsonModel.DetailedErrorMessage = messageStr;
-            statusJsonModel.Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown);
-            statusJsonModels.StatusList.Add(statusJsonModel);
+            statusJsonModel.Result =
+                messageStr;
+            statusJsonModel.OverallErrorMessage =
+                messageStr;
+            statusJsonModel.ErrorMessage =
+                messageStr;
+            statusJsonModel.DetailedErrorMessage =
+                messageStr;
+            statusJsonModel.Metadata =
+                CreateExecutionMetadata(
+                    settings.Metadata,
+                    workflowStatus,
+                    taskStatus);
+
+            statusJsonModels.StatusList.Add(
+                statusJsonModel);
+
             p = new TProgress
             {
-                Percentage = ProgressBars.COMPLETED_PERCENTAGE,
-                CurrentStep = currentStep,
-                MaxSteps = maxSteps,
-                CurrentAction = Constants.ExecutionStatus.ERROR,
-                Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown),
+                Percentage =
+                    ProgressBars.COMPLETED_PERCENTAGE,
+
+                CurrentStep =
+                    currentStep,
+
+                MaxSteps =
+                    maxSteps,
+
+                CurrentAction =
+                    Constants.ExecutionStatus.ERROR,
+
+                Metadata =
+                    CreateExecutionMetadata(
+                        settings.Metadata,
+                        workflowStatus,
+                        taskStatus),
             };
-            progressBar?.Report(p);
+
+            progressBar?.Report(
+                p);
+
             return statusJsonModels;
         }
 
@@ -489,23 +743,36 @@ namespace AiUtility.GeminiUtilityServices.Services
         }
 
         /// <summary>
-        /// Enter the prompt as <paramref name="userTask"/> into <paramref name="request"/> and then generate the response
-        /// via API call of Gemini AI Studio using <paramref name="settings"/>
+        /// Executes the Gemini workflow with tool support.
         /// </summary>
-        /// <typeparam name="TProgress"></typeparam>
-        /// <param name="request"></param>
-        /// <param name="userTask">user task</param>
-        /// <param name="settings"><seealso cref="AiExecutionSettings"/></param>
-        /// <param name="ct">Cancellation token</param>
-        /// <param name="progressBar">Progress bar that displayed on UI</param>
-        /// <returns><see cref="StatusJsonModels"/> represents the execution status or result of many tasks</returns>
-        public async Task<StatusJsonModels> WithExecuteWithToolSupportAsync<TProgress>(
-            GeminiGenerateRequest request ,
-            ReadOnlyMemory<char> userTask ,
-            AiExecutionSettings settings ,
-            CancellationToken ct = default ,
-            IProgress<TProgress>? progressBar = null
-        ) where TProgress : WorkflowProgress, new() // 限制必須繼承自基礎模型
+        /// <typeparam name="TProgress">
+        /// The workflow progress model type.
+        /// </typeparam>
+        /// <param name="request">
+        /// The Gemini generation request.
+        /// </param>
+        /// <param name="userTask">
+        /// The user task to execute.
+        /// </param>
+        /// <param name="settings">
+        /// The AI execution settings.
+        /// </param>
+        /// <param name="ct">
+        /// The cancellation token.
+        /// </param>
+        /// <param name="progressBar">
+        /// The optional progress reporter.
+        /// </param>
+        /// <returns>
+        /// The workflow execution result.
+        /// </returns>
+        public Task<StatusJsonModels> WithExecuteWithToolSupportAsync<TProgress>(
+            GeminiGenerateRequest request,
+            ReadOnlyMemory<char> userTask,
+            AiExecutionSettings settings,
+            CancellationToken ct = default,
+            IProgress<TProgress>? progressBar = null)
+            where TProgress : WorkflowProgress, new()
         {
             ArgumentNullException.ThrowIfNull(
                 request);
@@ -516,6 +783,7 @@ namespace AiUtility.GeminiUtilityServices.Services
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(
                 settings.MaxSteps,
                 nameof(settings.MaxSteps));
+
 
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(
                 settings.ToolExecutionTimeout.TotalMilliseconds,
@@ -528,299 +796,12 @@ namespace AiUtility.GeminiUtilityServices.Services
                     nameof(userTask));
             }
 
-            var workflowStatus = WorkflowCompletionStatus.InProgress;
-            var maxSteps = Math.Min(settings.MaxSteps, Constants.ExecutionSettings.MAX_STEPS);
-
-            StatusJsonModels statusJsonModels = new StatusJsonModels();
-            StatusJsonModel statusJsonModel = new StatusJsonModel
-            {
-                CategoryName = "ExecuteWithToolSupportAsync" ,
-                Description = Constants.Executions.Descriptions.EXECUTE_WITH_TOOL_SUPPORT_ASYNC_DESCRIPTION ,
-                Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
-            };
-
-            var message = ReadOnlyMemory<char>.Empty;
-            int currentStep = 0;
-
-            var p = new TProgress
-            {
-                Percentage = 0 + Constants.ProgressBars.BASE_OFFSET_PERCENTAGE ,
-                CurrentStep = currentStep ,
-                MaxSteps = maxSteps ,
-                CurrentAction = Constants.ToolTasks.PREPARE_TO_EXECUTE_TASK ,
-                Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
-            };
-            try
-            {
-                progressBar?.Report(p);
-                LogBeforeStartToExecuteTool(_logger , "ExecuteWithToolSupportAsync" , _conversationManager.LastTotalTokens);
-                var valueTask = await _semaphoreService.LockWithTimeoutValueAsync(
-                    ct ,
-                    Constants.Timeouts.DEFAULT_TIMEOUTS ,
-                    false
-                );
-
-                // 1. 同步工具定義 (將 Registry 裡的工具轉換為 Gemini API 格式)
-                _toolService.SyncToolsToRequest(request);
-
-                // 2. 加入使用者提示詞
-                request = request.WithUserMessage(userTask);
-
-                // 進入執行迴圈（處理潛在的多步 Function Calling）
-                while(currentStep < maxSteps)
-                {
-                    ct.ThrowIfCancellationRequested(); // 確保能立即反應取消請求
-                    currentStep++;
-
-                    // 回報一個稍微增加的數值，代表「開始傳送請求」
-
-                    p = new TProgress
-                    {
-                        Percentage = (int)((double)(currentStep - 1) / maxSteps * Constants.ProgressBars.COMPLETED_PERCENTAGE) + Constants.ProgressBars.BASE_OFFSET_PERCENTAGE ,
-                        CurrentStep = currentStep ,
-                        MaxSteps = maxSteps ,
-                        CurrentAction = Constants.ToolTasks.PREPARE_TO_SEND_PROMPT_TO_AI_MODEL ,
-                        Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
-                    };
-                    progressBar?.Report(p);
-
-                    var response = await _conversationManager.WithSendMessageAsync(
-                        request ,
-                        userTask ,
-                        settings ,
-                        ct
-                    );
-
-                    p = new TProgress
-                    {
-                        Percentage = (int)((double)currentStep / maxSteps * ProgressBars.COMPLETED_PERCENTAGE) ,
-                        CurrentStep = currentStep ,
-                        MaxSteps = maxSteps ,
-                        CurrentAction = string.Format(Constants.ToolTasks.AI_EXECUTING_TASK , "ExecuteWithToolSupportAsync") ,
-                        Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
-                    };
-
-                    progressBar?.Report(p);
-
-                    var candidate = response?.Candidates?.FirstOrDefault();
-                    var parts = candidate?.Content?.Parts;
-                    var firstPart = parts?.FirstOrDefault();
-
-                    if (firstPart is null)
-                    {
-                        const string errorMessage =
-                            Constants.Messages.FailureMessages.AI_RETURNS_NULL_RESPONSE;
-                        workflowStatus = WorkflowCompletionStatus.Failed;
-                        statusJsonModel.IsSuccess = false;
-                        statusJsonModel.Result = Constants.ExecutionStatus.ERROR;
-                        statusJsonModel.OverallErrorMessage = errorMessage;
-                        statusJsonModel.ErrorMessage = errorMessage;
-                        statusJsonModel.DetailedErrorMessage = errorMessage;
-                        statusJsonModel.Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown);
-                        statusJsonModels.StatusList.Add(statusJsonModel);
-
-                        p = new TProgress
-                        {
-                            Percentage = (int)((double)Math.Max(currentStep - 1, 0)
-                                / maxSteps * ProgressBars.COMPLETED_PERCENTAGE),
-                            CurrentStep = currentStep,
-                            MaxSteps = maxSteps,
-                            CurrentAction = Constants.ExecutionStatus.ERROR,
-                            Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown),
-                        };
-                        progressBar?.Report(p);
-                        return statusJsonModels;
-                    }
-
-                    var functionCalls = parts!
-                        .Where(static part => part.FunctionCall is not null)
-                        .Select(static part => part.FunctionCall!)
-                        .ToList();
-
-                    // 4. 檢查是否為文字回應 (AI 給出了最終答案)
-                    var textPart = parts.FirstOrDefault(static part => !part.RawText.IsEmpty);
-                    LogGeminiResponseStructure(_logger, parts.Count, functionCalls.Count, textPart is not null);
-                    if(functionCalls.Count == 0 && candidate != null && textPart is not null)
-                    {
-                        workflowStatus = WorkflowCompletionStatus.Completed;
-                        // 在回傳前，別忘了把 AI 的最後這句話也加入對話紀錄，保持 Session 連貫
-                        p = new TProgress
-                        {
-                            Percentage = ProgressBars.COMPLETED_PERCENTAGE ,
-                            CurrentStep = currentStep ,
-                            MaxSteps = maxSteps ,
-                            CurrentAction = Constants.ExecutionStatus.AI_COMPLETES_TASK ,
-                            Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
-                        };
-                        request.Contents.Add(candidate.Content);
-                        statusJsonModel.IsSuccess = true;
-                        statusJsonModel.Result = textPart.RawText.ToString();
-                        var finalMessage = statusJsonModel.Result;
-                        var logMessage = finalMessage.Length <= 500
-                            ? finalMessage
-                            : string.Concat(finalMessage.AsSpan(0, 500), "...");
-                        LogGeminiFinalResponse(_logger, logMessage);
-                        statusJsonModel.Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown);
-                        statusJsonModels.StatusList.Add(statusJsonModel);
-                        progressBar?.Report(p);
-                        return statusJsonModels;
-                    }
-
-                    // 5. 檢查是否為 FunctionCall (AI 要求執行工具)
-                    if(functionCalls.Count > 0)
-                    {
-                        request = request.WithMessage(candidate.Content);
-
-
-
-                        var responseParts = new List<GeminiPart>();
-
-
-                        if(settings.ForceSequentialToolExecution)
-                        {
-                            foreach(var call in functionCalls)
-                            {
-                                ct.ThrowIfCancellationRequested();
-                                var taskResult = await ExecuteAsync(call , settings , ct);
-                                statusJsonModels.StatusList.Add(taskResult.Status);
-                                responseParts.Add(taskResult.Part);
-                            }
-                        }
-                        else
-                        {
-                            // 建立所有執行任務 (並行啟動)
-                            var tasks = functionCalls.Select(call => ExecuteAsync(call , settings , ct));
-                            // 等待所有工具執行完畢
-                            var taskResults = await Task.WhenAll(tasks);
-                            statusJsonModels.StatusList.AddRange(taskResults.Select(r => r.Status));
-                            responseParts = taskResults.Select(r => r.Part).ToList();
-                        }
-                        request = request.WithMessage(new GeminiMessage
-                        {
-                            Role = Constants.AiApi.GeminiAiStudio.AiSchema.FunctionCall.USER , // "user"
-                            Parts = responseParts
-                        });
-                        continue;
-
-                    }
-                    const string unsupportedResponseMessage =
-                        "Gemini returned neither a function call nor textual content.";
-                    LogFailureWhenExecutingTool(_logger, unsupportedResponseMessage);
-                    workflowStatus = WorkflowCompletionStatus.Failed;
-                    statusJsonModel.IsSuccess = false;
-                    statusJsonModel.Result = Constants.ExecutionStatus.ERROR;
-                    statusJsonModel.OverallErrorMessage = unsupportedResponseMessage;
-                    statusJsonModel.ErrorMessage = unsupportedResponseMessage;
-                    statusJsonModel.DetailedErrorMessage = unsupportedResponseMessage;
-                    statusJsonModel.Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown);
-                    statusJsonModels.StatusList.Add(statusJsonModel);
-
-                    p = new TProgress
-                    {
-                        Percentage = (int)((double)currentStep / maxSteps * ProgressBars.COMPLETED_PERCENTAGE),
-                        CurrentStep = currentStep,
-                        MaxSteps = maxSteps,
-                        CurrentAction = Constants.ExecutionStatus.ERROR,
-                        Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown),
-                    };
-                    progressBar?.Report(p);
-                    return statusJsonModels;
-                }
-            }
-            catch(OperationCanceledException)
-            {
-                // 讓取消信號正常向外傳遞，不要攔截它
-                throw;
-            }
-            catch(Exception exception)
-            {
-                workflowStatus = WorkflowCompletionStatus.Failed;
-                var exceptionUtilityService = new ExceptionHandlingUtilityServices.ExceptionUtilityService(exception);
-                exceptionUtilityService.FlattenAndProcess((ex) =>
-                {
-                    LogExceptionWhenExecutingTool(_logger , ex);
-                    statusJsonModels.StatusList.Add(new StatusJsonModel()
-                    {
-                        IsSuccess = false ,
-                        Result = AiUtility.AiBaseUtilityServices.Consts.Constants.Messages.FailureMessages.AI_API_RUNTIME_EXCEPTION_WITH_DETAILS ,
-                        OverallErrorMessage = Constants.Messages.FailureMessages.AI_API_RUNTIME_EXCEPTION ,
-                        ErrorMessage = ex.Message ,
-                        DetailedErrorMessage = new ExceptionFactory(ex).Create(),
-                        Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown),
-                    });
-                });
-
-                p = new TProgress
-                {
-                    Percentage = (int)((double)(currentStep - 1) / maxSteps * AiUtility.AiBaseUtilityServices.Consts.Constants.ProgressBars.COMPLETED_PERCENTAGE) ,
-                    CurrentStep = currentStep ,
-                    MaxSteps = maxSteps ,
-                    CurrentAction = Constants.ExecutionStatus.ERROR ,
-                    Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown) ,
-                };
-                progressBar?.Report(p);
-                return statusJsonModels;
-            }
-            finally
-            {
-                LogAfterFinishExecutingTool(_logger , "ExecuteWithToolSupportAsync" , _conversationManager.LastTotalTokens);
-            }
-
-            var messageStr = string.Format(AiUtility.AiBaseUtilityServices.Consts.Constants.Messages.FailureMessages.MAX_STEPS_REACHED_FORMAT , maxSteps);
-            LogFailureWhenExecutingTool(_logger , messageStr);
-            workflowStatus = WorkflowCompletionStatus.Failed;
-            statusJsonModel.IsSuccess = false;
-            statusJsonModel.Result = messageStr;
-            statusJsonModel.OverallErrorMessage = messageStr;
-            statusJsonModel.ErrorMessage = messageStr;
-            statusJsonModel.DetailedErrorMessage = messageStr;
-            statusJsonModel.Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown);
-            statusJsonModels.StatusList.Add(statusJsonModel);
-            p = new TProgress
-            {
-                Percentage = ProgressBars.COMPLETED_PERCENTAGE,
-                CurrentStep = currentStep,
-                MaxSteps = maxSteps,
-                CurrentAction = Constants.ExecutionStatus.ERROR,
-                Metadata = CreateExecutionMetadata(settings.Metadata, workflowStatus, TaskExecutionStatus.Unknown),
-            };
-            progressBar?.Report(p);
-            return statusJsonModels;
-        }
-
-        /// <summary>
-        /// Creates execution metadata containing workflow and business-task status.
-        /// </summary>
-        /// <param name="source">
-        /// The original execution metadata.
-        /// </param>
-        /// <param name="workflowStatus">
-        /// The current Gemini workflow completion status.
-        /// </param>
-        /// <param name="taskStatus">
-        /// The current business-task execution status.
-        /// </param>
-        /// <returns>
-        /// A new metadata dictionary containing the original values and status information.
-        /// </returns>
-        private static Dictionary<string, string> CreateExecutionMetadata(
-            IReadOnlyDictionary<string, string>? source,
-            WorkflowCompletionStatus workflowStatus,
-            TaskExecutionStatus taskStatus)
-        {
-            var metadata =
-                source is null
-                    ? new Dictionary<string, string>()
-                    : new Dictionary<string, string>(
-                        source);
-
-            metadata["WorkflowStatus"] =
-                workflowStatus.ToString();
-
-            metadata["TaskStatus"] =
-                taskStatus.ToString();
-
-            return metadata;
+            return ExecuteWithToolSupportAsync(
+                request,
+                userTask,
+                settings,
+                ct,
+                progressBar);
         }
 
         /// <summary>
@@ -1021,6 +1002,41 @@ namespace AiUtility.GeminiUtilityServices.Services
         {
             var json = File.ReadAllText(filePath);
             return JsonSerializer.Deserialize<GeminiGenerateRequest>(json) ?? throw new InvalidOperationException("無法解析 Session 檔案。");
+        }
+
+        /// <summary>
+        /// Creates execution metadata containing workflow and business-task status.
+        /// </summary>
+        /// <param name="source">
+        /// The original execution metadata.
+        /// </param>
+        /// <param name="workflowStatus">
+        /// The current Gemini workflow completion status.
+        /// </param>
+        /// <param name="taskStatus">
+        /// The current business-task execution status.
+        /// </param>
+        /// <returns>
+        /// A new metadata dictionary containing the original values and status information.
+        /// </returns>
+        private static Dictionary<string, string> CreateExecutionMetadata(
+            IReadOnlyDictionary<string, string>? source,
+            WorkflowCompletionStatus workflowStatus,
+            TaskExecutionStatus taskStatus)
+        {
+            var metadata =
+                source is null
+                    ? new Dictionary<string, string>()
+                    : new Dictionary<string, string>(
+                        source);
+
+            metadata["WorkflowStatus"] =
+                workflowStatus.ToString();
+
+            metadata["TaskStatus"] =
+                taskStatus.ToString();
+
+            return metadata;
         }
 
         /// <summary>
