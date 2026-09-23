@@ -35,6 +35,41 @@ namespace AiUtility.GeminiUtilityServices.Services
         [LoggerMessage(Level = LogLevel.Information , Message = "Finish AI Workflow for task: {TaskName}, Current Memory Tokens: {Tokens}")]
         static partial void LogAfterFinishExecutingTool(ILogger logger , string TaskName , int Tokens);
 
+        [LoggerMessage(
+            Level = LogLevel.Information,
+            Message = "Executing Gemini tool. ToolName={ToolName}")]
+        private static partial void LogGeminiToolExecuting(
+            ILogger logger,
+            string ToolName);
+
+        [LoggerMessage(
+            Level = LogLevel.Information,
+            Message = "Gemini tool completed. ToolName={ToolName}")]
+        private static partial void LogGeminiToolCompleted(
+            ILogger logger,
+            string ToolName);
+
+        /// <summary>
+        /// Logs an exception that occurs while executing a Gemini tool.
+        /// </summary>
+        /// <param name="logger">
+        /// The logger instance.
+        /// </param>
+        /// <param name="exception">
+        /// The exception raised while executing the tool.
+        /// </param>
+        /// <param name="toolName">
+        /// The name of the Gemini tool that failed.
+        /// </param>
+        [LoggerMessage(
+            Level = LogLevel.Error,
+            Message = "Gemini tool execution failed. ToolName={ToolName}")]
+        private static partial void LogGeminiToolExecutionFailed(
+            ILogger logger,
+            Exception exception,
+            string toolName);
+
+
         private readonly ILoggerFactoryBaseUtilityService _loggerFactoryService = loggerFactoryService;
         public ILoggerFactoryBaseUtilityService LoggerFactoryService => _loggerFactoryService;
 
@@ -627,11 +662,20 @@ namespace AiUtility.GeminiUtilityServices.Services
 
             try
             {
+                LogGeminiToolExecuting(
+                    _logger,
+                    call.Name);
+
                 var result = await _toolExecutor.ExecuteAsync(
-                    call.Name ,
-                    call.Args.ToDictionary(k => k.Key , v => (object)v.Value) ,
+                    call.Name,
+                    call.Args.ToDictionary(k => k.Key, v => (object)v.Value),
                     linkedCt
                 );
+
+                LogGeminiToolCompleted(
+                    _logger,
+                    call.Name);
+
                 return (
                     Part: new GeminiPart
                     {
@@ -683,7 +727,12 @@ namespace AiUtility.GeminiUtilityServices.Services
             catch(Exception ex) when(ex is not OperationCanceledException)
             {
                 var errorMessage = "An unknown error occured!!!";
-                LogFailureWhenExecutingTool(_logger , $"工具 {call.Name} 執行失敗，錯誤訊息: {ex.Message}");
+
+                LogGeminiToolExecutionFailed(
+                    _logger,
+                    ex,
+                    call.Name);
+
                 // 將錯誤餵回給 AI，讓它有機會進行補救或重新識別 UI
                 return (
                     Part: new GeminiPart
