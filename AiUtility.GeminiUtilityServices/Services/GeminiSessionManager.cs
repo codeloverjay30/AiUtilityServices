@@ -256,7 +256,8 @@ namespace AiUtility.GeminiUtilityServices.Services
                         .ToList();
 
                     // 4. 檢查是否為文字回應 (AI 給出了最終答案)
-                    if(functionCalls.Count == 0 && candidate != null && !(firstPart?.RawText.IsEmpty ?? false))
+                    var textPart = parts.FirstOrDefault(static part => !part.RawText.IsEmpty);
+                    if(functionCalls.Count == 0 && candidate != null && textPart is not null)
                     {
                         // AI 給了答案
 
@@ -270,7 +271,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                             Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
                         };
                         request.AddMessage(candidate.Content);
-                        message = firstPart?.RawText ?? ReadOnlyMemory<char>.Empty;
+                        message = textPart.RawText;
                         statusJsonModel.IsSuccess = true;
                         statusJsonModel.Result = message.ToString();
                         statusJsonModels.StatusList.Add(statusJsonModel);
@@ -553,7 +554,8 @@ namespace AiUtility.GeminiUtilityServices.Services
                         .ToList();
 
                     // 4. 檢查是否為文字回應 (AI 給出了最終答案)
-                    if(functionCalls.Count == 0 && candidate != null && !(firstPart?.RawText.IsEmpty ?? false))
+                    var textPart = parts.FirstOrDefault(static part => !part.RawText.IsEmpty);
+                    if(functionCalls.Count == 0 && candidate != null && textPart is not null)
                     {
                         // 在回傳前，別忘了把 AI 的最後這句話也加入對話紀錄，保持 Session 連貫
                         p = new TProgress
@@ -566,7 +568,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                         };
                         request.Contents.Add(candidate.Content);
                         statusJsonModel.IsSuccess = true;
-                        statusJsonModel.Result = firstPart?.RawText.ToString() ?? string.Empty;
+                        statusJsonModel.Result = textPart.RawText.ToString();
                         statusJsonModels.StatusList.Add(statusJsonModel);
                         progressBar?.Report(p);
                         return statusJsonModels;
