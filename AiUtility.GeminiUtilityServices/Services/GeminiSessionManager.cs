@@ -182,10 +182,16 @@ namespace AiUtility.GeminiUtilityServices.Services
             IProgress<TProgress>? progressBar = null
         ) where TProgress : WorkflowProgress, new() // 限制必須繼承自基礎模型
         {
-            ArgumentNullException.ThrowIfNull(request);
-            ArgumentNullException.ThrowIfNull(settings);
+            ArgumentNullException.ThrowIfNull(
+                request);
+
+            ArgumentNullException.ThrowIfNull(
+                settings);
+
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(
-                settings.MaxSteps, nameof(settings.MaxSteps));
+                settings.MaxSteps,
+                nameof(settings.MaxSteps));
+
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(
                 settings.ToolExecutionTimeout.TotalMilliseconds,
                 nameof(settings.ToolExecutionTimeout));
@@ -193,7 +199,8 @@ namespace AiUtility.GeminiUtilityServices.Services
             if (userTask.IsEmpty)
             {
                 throw new ArgumentException(
-                    "User task cannot be empty.", nameof(userTask));
+                    "User task cannot be empty.",
+                    nameof(userTask));
             }
 
             var workflowStatus = WorkflowCompletionStatus.InProgress;
@@ -500,10 +507,16 @@ namespace AiUtility.GeminiUtilityServices.Services
             IProgress<TProgress>? progressBar = null
         ) where TProgress : WorkflowProgress, new() // 限制必須繼承自基礎模型
         {
-            ArgumentNullException.ThrowIfNull(request);
-            ArgumentNullException.ThrowIfNull(settings);
+            ArgumentNullException.ThrowIfNull(
+                request);
+
+            ArgumentNullException.ThrowIfNull(
+                settings);
+
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(
-                settings.MaxSteps, nameof(settings.MaxSteps));
+                settings.MaxSteps,
+                nameof(settings.MaxSteps));
+
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(
                 settings.ToolExecutionTimeout.TotalMilliseconds,
                 nameof(settings.ToolExecutionTimeout));
@@ -511,7 +524,8 @@ namespace AiUtility.GeminiUtilityServices.Services
             if (userTask.IsEmpty)
             {
                 throw new ArgumentException(
-                    "User task cannot be empty.", nameof(userTask));
+                    "User task cannot be empty.",
+                    nameof(userTask));
             }
 
             var workflowStatus = WorkflowCompletionStatus.InProgress;
