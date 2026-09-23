@@ -133,3 +133,67 @@ and convert `ReadyOnlyMemory<byte>` instance to `string` (and vice versa).
 ## 5.2.0-preview-1.0.0
 ### Fixed
 + 修改Gemini API Restful Schema
+
+## 6.0.0-preview-1.0.0
+### Fixed
++ Fix Gemini agent workflow terminating before function calls are executed
+
+## 6.0.1-preview-1.0.0
+### Fixed
++ Add logging before and after AI workflow execution.
+
+## 6.0.2-preview-1.0.0
+### Fixed
++ Add logging for message after AI workflow execution.
+
+## 6.0.3-preview-1.0.0
+### Fixed
++ Add logging after AI workflow execution.
+
+## 6.1.0-preview-1.0.0
+### Fixed
++ Tool declaration 序列化成 JSON 時欄位名稱錯了
+
+## 6.1.1-preview-1.0.0
+### Fixed
++ Add logging after serialization.
+
+## 6.1.2-preview-1.0.0
+### Fixed
++ Add logging after serialization.
+
+## 6.1.3-preview-1.0.0
+### Fixed
++ Add logging about assembly info.
+
+## 7.0.0-preview-1.0.0
+### Fixed
++ use schema generator
+
+## 7.1.0-preview-1.0.0
+### Fixed
++ Update Schema for deserialization about Gemini.
+
+## 7.2.0-preview-1.0.0
+### Fixed
++ Update Schema for serialization about Gemini.
+
+## 7.3.0-preview-1.0.0
+### Fixed
++ Update Schema for deserialization about Gemini.
+
+## 7.4.0-preview-1.0.0
+### Fixed
++ Fix JSON-as-string bug.
+
+## 7.5.0-preview-1.0.0
+### Fixed
++ Solve Role 'function' is not supported.
+
+## 7.5.1-preview-1.0.0
+### Fixed
++ Update logging level when exception is catched.
+
+## 7.6.0-preview-1.0.0
+### Fixed
++ Fix the NRE exception.
