@@ -351,10 +351,11 @@ namespace AiUtility.GeminiUtilityServices.Services
                     Percentage = (int)((double)(currentStep - 1) / maxSteps * AiUtility.AiBaseUtilityServices.Consts.Constants.ProgressBars.COMPLETED_PERCENTAGE) ,
                     CurrentStep = currentStep ,
                     MaxSteps = maxSteps ,
-                    CurrentAction = Constants.ExecutionStatus.AI_COMPLETES_TASK ,
+                    CurrentAction = Constants.ExecutionStatus.ERROR ,
                     Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
                 };
                 progressBar?.Report(p);
+                return statusJsonModels;
             }
             finally
             {
@@ -643,10 +644,11 @@ namespace AiUtility.GeminiUtilityServices.Services
                     Percentage = (int)((double)(currentStep - 1) / maxSteps * AiUtility.AiBaseUtilityServices.Consts.Constants.ProgressBars.COMPLETED_PERCENTAGE) ,
                     CurrentStep = currentStep ,
                     MaxSteps = maxSteps ,
-                    CurrentAction = Constants.ExecutionStatus.AI_COMPLETES_TASK ,
+                    CurrentAction = Constants.ExecutionStatus.ERROR ,
                     Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
                 };
                 progressBar?.Report(p);
+                return statusJsonModels;
             }
             finally
             {
