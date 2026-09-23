@@ -322,7 +322,27 @@ namespace AiUtility.GeminiUtilityServices.Services
                         continue;
 
                     }
-                    break;
+                    const string unsupportedResponseMessage =
+                        "Gemini returned neither a function call nor textual content.";
+                    LogFailureWhenExecutingTool(_logger, unsupportedResponseMessage);
+                    statusJsonModel.IsSuccess = false;
+                    statusJsonModel.Result = Constants.ExecutionStatus.ERROR;
+                    statusJsonModel.OverallErrorMessage = unsupportedResponseMessage;
+                    statusJsonModel.ErrorMessage = unsupportedResponseMessage;
+                    statusJsonModel.DetailedErrorMessage = unsupportedResponseMessage;
+                    statusJsonModels.StatusList.Add(statusJsonModel);
+
+                    p = new TProgress
+                    {
+                        Percentage = (int)((double)currentStep / maxSteps * ProgressBars.COMPLETED_PERCENTAGE),
+                        CurrentStep = currentStep,
+                        MaxSteps = maxSteps,
+                        CurrentAction = Constants.ExecutionStatus.ERROR,
+                        Metadata = settings.Metadata != null
+                            ? new Dictionary<string, string>(settings.Metadata) : new(),
+                    };
+                    progressBar?.Report(p);
+                    return statusJsonModels;
                 }
             }
             catch(OperationCanceledException)
@@ -615,7 +635,27 @@ namespace AiUtility.GeminiUtilityServices.Services
                         continue;
 
                     }
-                    break;
+                    const string unsupportedResponseMessage =
+                        "Gemini returned neither a function call nor textual content.";
+                    LogFailureWhenExecutingTool(_logger, unsupportedResponseMessage);
+                    statusJsonModel.IsSuccess = false;
+                    statusJsonModel.Result = Constants.ExecutionStatus.ERROR;
+                    statusJsonModel.OverallErrorMessage = unsupportedResponseMessage;
+                    statusJsonModel.ErrorMessage = unsupportedResponseMessage;
+                    statusJsonModel.DetailedErrorMessage = unsupportedResponseMessage;
+                    statusJsonModels.StatusList.Add(statusJsonModel);
+
+                    p = new TProgress
+                    {
+                        Percentage = (int)((double)currentStep / maxSteps * ProgressBars.COMPLETED_PERCENTAGE),
+                        CurrentStep = currentStep,
+                        MaxSteps = maxSteps,
+                        CurrentAction = Constants.ExecutionStatus.ERROR,
+                        Metadata = settings.Metadata != null
+                            ? new Dictionary<string, string>(settings.Metadata) : new(),
+                    };
+                    progressBar?.Report(p);
+                    return statusJsonModels;
                 }
             }
             catch(OperationCanceledException)
