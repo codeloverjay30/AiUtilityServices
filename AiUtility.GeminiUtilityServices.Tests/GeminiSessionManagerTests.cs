@@ -5,6 +5,7 @@ using AiUtility.GeminiUtilityServices.Models;
 using AiUtility.GeminiUtilityServices.Services;
 using AiUtility.ToolKits.Abstractions;
 using CommonModels;
+using FluentAssertions;
 using LoggerFactoryUtilityServices;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualBasic;
@@ -516,60 +517,137 @@ namespace AiUtility.GeminiUtilityServices.Tests
         public async Task ExecuteWithToolSupportAsync_ShouldReportDetailedProgress()
         {
             // Arrange
-            var request = new GeminiGenerateRequest();
-            var settings = new AiExecutionSettings { MaxSteps = 5 };
-            var progressList = new List<WorkflowProgress>();
-            var progressMock = new Progress<WorkflowProgress>(p => progressList.Add(p));
+            var progressReports =
+                new List<WorkflowProgress>();
 
-            var response = new GeminiResponse
-            {
-                Candidates = new List<GeminiCandidate>
+            var progress = new Mock<IProgress<WorkflowProgress>>();
+            progress
+                .Setup(reporter => reporter.Report(It.IsAny<WorkflowProgress>()))
+                .Callback<WorkflowProgress>(progressReports.Add);
+
+            var response =
+                new GeminiResponse
                 {
-                    new GeminiCandidate
-                    {
-                        Content = new GeminiMessage
+                    Candidates =
+                    [
+                        new GeminiCandidate
+                {
+                    Content =
+                        new GeminiMessage
                         {
-                            Parts = new List<GeminiPart>
-                            {
-                                new GeminiPart { Text = "完成" }
-                            }
+                            Role =
+                                Constants.AiApi
+                                    .GeminiAiStudio
+                                    .AiSchema
+                                    .Roles
+                                    .MODEL,
+
+                            Parts =
+                            [
+                                new GeminiPart
+                                {
+                                    Text =
+                                        "Response from AI"
+                                }
+                            ]
                         }
-                    }
                 }
-            };
+                    ]
+                };
 
-            _mockConversationManager.Setup(x => x.SendMessageAsync(
-                It.IsAny<GeminiGenerateRequest>(),
-                It.IsAny<string>() ,
-                It.IsAny<AiExecutionSettings>() ,
-                It.IsAny<CancellationToken>()
-            ))
-                .ReturnsAsync(response);
+            _mockConversationManager
+                .Setup(
+                    manager =>
+                        manager.SendMessageAsync(
+                            It.IsAny<GeminiGenerateRequest>(),
+                            It.IsAny<ReadOnlyMemory<char>>(),
+                            It.IsAny<AiExecutionSettings>(),
+                            It.IsAny<CancellationToken>()))
+                .ReturnsAsync(
+                    response);
 
-            var manager = new GeminiSessionManager(
-                _mockLoggerFactory.Object ,
-                _mockConversationManager.Object ,
-                _mockToolService.Object ,
-                _mockToolExecutor.Object ,
-                _mockSemaphoreService.Object
-            );
+            var request =
+                new GeminiGenerateRequest();
+
+            var settings =
+                new AiExecutionSettings
+                {
+                    MaxSteps = 5
+                };
+
+            var sut =
+                new GeminiSessionManager(
+                    _mockLoggerFactory.Object,
+                    _mockConversationManager.Object,
+                    _mockToolService.Object,
+                    _mockToolExecutor.Object,
+                    _mockSemaphoreService.Object);
 
             // Act
-            await manager.ExecuteWithToolSupportAsync(
-                request ,
-                "測試進度".AsMemory() ,
-                settings ,
-                CancellationToken.None ,
-                progressMock
-            );
-
-            // 由於 Progress<T> 是非同步觸發，稍微等待一下確保 Callback 已執行
-            await Task.Delay(100);
+            var result =
+                await sut
+                    .ExecuteWithToolSupportAsync<WorkflowProgress>(
+                        request,
+                        "test task".AsMemory(),
+                        settings,
+                        CancellationToken.None,
+                        progress.Object);
 
             // Assert
-            Assert.Contains(progressList , p => p.CurrentAction.Contains("AI"));
-            Assert.Contains(progressList , p => p.Percentage == 100);
+            result.Should().NotBeNull();
+
+            progressReports
+                .Should()
+                .NotBeEmpty();
+
+            progressReports
+                .Should()
+                .Contain(
+                    item =>
+                        item.CurrentAction ==
+                        Constants.ToolTasks
+                            .PREPARE_TO_EXECUTE_TASK);
+
+            progressReports
+                .Should()
+                .Contain(
+                    item =>
+                        item.CurrentAction ==
+                        Constants.ToolTasks
+                            .PREPARE_TO_SEND_PROMPT_TO_AI_MODEL);
+
+            progressReports
+                .Should()
+                .Contain(
+                    item =>
+                        item.CurrentAction ==
+                        string.Format(
+                            Constants.ToolTasks.AI_EXECUTING_TASK,
+                            "ExecuteWithToolSupportAsync"));
+
+            progressReports
+                .Should()
+                .Contain(
+                    item =>
+                        item.CurrentAction ==
+                        Constants.ExecutionStatus
+                            .AI_COMPLETES_TASK);
+
+            var completedProgress =
+                progressReports
+                    .Last(
+                        item =>
+                            item.CurrentAction ==
+                            Constants.ExecutionStatus
+                                .AI_COMPLETES_TASK);
+
+            completedProgress.Percentage
+                .Should()
+                .Be(
+                    Constants.ProgressBars
+                        .COMPLETED_PERCENTAGE);
         }
+
 
         /// <summary>
         /// 驗證傳入的 Metadata 是否能正確出現在進度回報中（這對多設備自動化至關重要）。
