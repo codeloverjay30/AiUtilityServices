@@ -298,6 +298,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                             // 需要分別執行FunctionCall
                             foreach(var call in functionCalls)
                             {
+                                ct.ThrowIfCancellationRequested();
                                 var taskResult = await ExecuteAsync(call! , settings , ct);
                                 statusJsonModels.StatusList.Add(taskResult.Status);
                                 responseParts.Add(taskResult.Part);
@@ -613,6 +614,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                         {
                             foreach(var call in functionCalls)
                             {
+                                ct.ThrowIfCancellationRequested();
                                 var taskResult = await ExecuteAsync(call! , settings , ct);
                                 statusJsonModels.StatusList.Add(taskResult.Status);
                                 responseParts.Add(taskResult.Part);
