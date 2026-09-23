@@ -256,7 +256,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                         .ToList();
 
                     // 4. 檢查是否為文字回應 (AI 給出了最終答案)
-                    if(candidate != null && !(firstPart?.RawText.IsEmpty ?? false))
+                    if(functionCalls.Count == 0 && candidate != null && !(firstPart?.RawText.IsEmpty ?? false))
                     {
                         // AI 給了答案
 
@@ -553,7 +553,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                         .ToList();
 
                     // 4. 檢查是否為文字回應 (AI 給出了最終答案)
-                    if(candidate != null && !(firstPart?.RawText.IsEmpty ?? false))
+                    if(functionCalls.Count == 0 && candidate != null && !(firstPart?.RawText.IsEmpty ?? false))
                     {
                         // 在回傳前，別忘了把 AI 的最後這句話也加入對話紀錄，保持 Session 連貫
                         p = new TProgress
