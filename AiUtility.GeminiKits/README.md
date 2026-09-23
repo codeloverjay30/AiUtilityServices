@@ -43,3 +43,15 @@
 ## 4.1.1-preview-1.0.0
 ### Fixed
 + 0 應該是合法的初始 token state
+
+## 4.1.2-preview-1.0.0
+### Fixed
++ 修改schema (新增JsonIgnore去忽略serialization的大小寫)
+
+## 5.1.0-preview-1.0.0
+### Fixed
++ Solve Role 'function' is not supported.
+
+## 5.2.0-preview-1.0.0
+### Fixed
++ Fix the NRE exception.

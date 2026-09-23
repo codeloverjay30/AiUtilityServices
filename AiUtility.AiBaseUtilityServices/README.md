@@ -38,3 +38,11 @@ Utility base class of API of AI model.
 ## 4.1.1-preview-1.0.0
 ### Fixed
 + 0 應該是合法的初始 token state
+
+## 5.1.0-preview-1.0.0
+### Fixed
++ Solve Role 'function' is not supported.
+
+## 5.2.0-preview-1.0.0
+### Fixed
++ Fix the `FormatException` thrown by `WorkflowProgress.ToString()`.
