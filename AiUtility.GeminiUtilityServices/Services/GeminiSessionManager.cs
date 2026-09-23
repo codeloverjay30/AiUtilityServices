@@ -148,6 +148,8 @@ namespace AiUtility.GeminiUtilityServices.Services
                     "User task cannot be empty.", nameof(userTask));
             }
 
+            var maxSteps = Math.Min(settings.MaxSteps, Constants.ExecutionSettings.MAX_STEPS);
+
             StatusJsonModels statusJsonModels = new StatusJsonModels();
             StatusJsonModel statusJsonModel = new StatusJsonModel
             {
@@ -164,7 +166,7 @@ namespace AiUtility.GeminiUtilityServices.Services
             {
                 Percentage = 0 + Constants.ProgressBars.BASE_OFFSET_PERCENTAGE ,
                 CurrentStep = currentStep ,
-                MaxSteps = settings.MaxSteps ,
+                MaxSteps = maxSteps ,
                 CurrentAction = Constants.ToolTasks.PREPARE_TO_EXECUTE_TASK ,
                 Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
             };
@@ -185,7 +187,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                 request.AddUserMessage(userTask);
 
                 // 進入執行迴圈（處理潛在的多步 Function Calling）
-                while(currentStep < Constants.ExecutionSettings.MAX_STEPS)
+                while(currentStep < maxSteps)
                 {
                     ct.ThrowIfCancellationRequested(); // 確保能立即反應取消請求
                     currentStep++;
@@ -194,9 +196,9 @@ namespace AiUtility.GeminiUtilityServices.Services
 
                     p = new TProgress
                     {
-                        Percentage = (int)((double)(currentStep - 1) / settings.MaxSteps * Constants.ProgressBars.COMPLETED_PERCENTAGE) + Constants.ProgressBars.BASE_OFFSET_PERCENTAGE ,
+                        Percentage = (int)((double)(currentStep - 1) / maxSteps * Constants.ProgressBars.COMPLETED_PERCENTAGE) + Constants.ProgressBars.BASE_OFFSET_PERCENTAGE ,
                         CurrentStep = currentStep ,
-                        MaxSteps = settings.MaxSteps ,
+                        MaxSteps = maxSteps ,
                         CurrentAction = Constants.ToolTasks.PREPARE_TO_SEND_PROMPT_TO_AI_MODEL ,
                         Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
                     };
@@ -211,9 +213,9 @@ namespace AiUtility.GeminiUtilityServices.Services
 
                     p = new TProgress
                     {
-                        Percentage = (int)((double)currentStep / settings.MaxSteps * ProgressBars.COMPLETED_PERCENTAGE) ,
+                        Percentage = (int)((double)currentStep / maxSteps * ProgressBars.COMPLETED_PERCENTAGE) ,
                         CurrentStep = currentStep ,
-                        MaxSteps = settings.MaxSteps ,
+                        MaxSteps = maxSteps ,
                         CurrentAction = string.Format(Constants.ToolTasks.AI_EXECUTING_TASK , "ExecuteWithToolSupportAsync") ,
                         Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
                     };
@@ -234,7 +236,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                         {
                             Percentage = ProgressBars.COMPLETED_PERCENTAGE ,
                             CurrentStep = currentStep ,
-                            MaxSteps = settings.MaxSteps ,
+                            MaxSteps = maxSteps ,
                             CurrentAction = Constants.ExecutionStatus.AI_COMPLETES_TASK ,
                             Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
                         };
@@ -259,7 +261,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                         {
                             Percentage = ProgressBars.COMPLETED_PERCENTAGE ,
                             CurrentStep = currentStep ,
-                            MaxSteps = settings.MaxSteps ,
+                            MaxSteps = maxSteps ,
                             CurrentAction = Constants.ExecutionStatus.AI_COMPLETES_TASK ,
                             Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
                         };
@@ -341,9 +343,9 @@ namespace AiUtility.GeminiUtilityServices.Services
 
                 p = new TProgress
                 {
-                    Percentage = (int)((double)(currentStep - 1) / settings.MaxSteps * AiUtility.AiBaseUtilityServices.Consts.Constants.ProgressBars.COMPLETED_PERCENTAGE) ,
+                    Percentage = (int)((double)(currentStep - 1) / maxSteps * AiUtility.AiBaseUtilityServices.Consts.Constants.ProgressBars.COMPLETED_PERCENTAGE) ,
                     CurrentStep = currentStep ,
-                    MaxSteps = settings.MaxSteps ,
+                    MaxSteps = maxSteps ,
                     CurrentAction = Constants.ExecutionStatus.AI_COMPLETES_TASK ,
                     Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
                 };
@@ -354,9 +356,9 @@ namespace AiUtility.GeminiUtilityServices.Services
 
             }
 
-            if(currentStep >= settings.MaxSteps)
+            if(currentStep >= maxSteps)
             {
-                message = string.Format(AiUtility.AiBaseUtilityServices.Consts.Constants.Messages.FailureMessages.MAX_STEPS_REACHED_FORMAT , settings.MaxSteps).AsMemory();
+                message = string.Format(AiUtility.AiBaseUtilityServices.Consts.Constants.Messages.FailureMessages.MAX_STEPS_REACHED_FORMAT , maxSteps).AsMemory();
                 var messageStr = message.ToString();
                 LogFailureWhenExecutingTool(_logger , messageStr);
                 statusJsonModel.IsSuccess = false;
@@ -373,7 +375,7 @@ namespace AiUtility.GeminiUtilityServices.Services
             {
                 Percentage = AiUtility.AiBaseUtilityServices.Consts.Constants.ProgressBars.COMPLETED_PERCENTAGE ,
                 CurrentStep = currentStep ,
-                MaxSteps = settings.MaxSteps ,
+                MaxSteps = maxSteps ,
                 CurrentAction = AiUtility.AiBaseUtilityServices.Consts.Constants.ExecutionStatus.AI_COMPLETES_TASK ,
                 Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
             };
@@ -439,6 +441,8 @@ namespace AiUtility.GeminiUtilityServices.Services
                     "User task cannot be empty.", nameof(userTask));
             }
 
+            var maxSteps = Math.Min(settings.MaxSteps, Constants.ExecutionSettings.MAX_STEPS);
+
             StatusJsonModels statusJsonModels = new StatusJsonModels();
             StatusJsonModel statusJsonModel = new StatusJsonModel
             {
@@ -455,7 +459,7 @@ namespace AiUtility.GeminiUtilityServices.Services
             {
                 Percentage = 0 + Constants.ProgressBars.BASE_OFFSET_PERCENTAGE ,
                 CurrentStep = currentStep ,
-                MaxSteps = settings.MaxSteps ,
+                MaxSteps = maxSteps ,
                 CurrentAction = Constants.ToolTasks.PREPARE_TO_EXECUTE_TASK ,
                 Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
             };
@@ -476,7 +480,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                 request = request.WithUserMessage(userTask);
 
                 // 進入執行迴圈（處理潛在的多步 Function Calling）
-                while(currentStep < Constants.ExecutionSettings.MAX_STEPS)
+                while(currentStep < maxSteps)
                 {
                     ct.ThrowIfCancellationRequested(); // 確保能立即反應取消請求
                     currentStep++;
@@ -485,9 +489,9 @@ namespace AiUtility.GeminiUtilityServices.Services
 
                     p = new TProgress
                     {
-                        Percentage = (int)((double)(currentStep - 1) / settings.MaxSteps * Constants.ProgressBars.COMPLETED_PERCENTAGE) + Constants.ProgressBars.BASE_OFFSET_PERCENTAGE ,
+                        Percentage = (int)((double)(currentStep - 1) / maxSteps * Constants.ProgressBars.COMPLETED_PERCENTAGE) + Constants.ProgressBars.BASE_OFFSET_PERCENTAGE ,
                         CurrentStep = currentStep ,
-                        MaxSteps = settings.MaxSteps ,
+                        MaxSteps = maxSteps ,
                         CurrentAction = Constants.ToolTasks.PREPARE_TO_SEND_PROMPT_TO_AI_MODEL ,
                         Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
                     };
@@ -502,9 +506,9 @@ namespace AiUtility.GeminiUtilityServices.Services
 
                     p = new TProgress
                     {
-                        Percentage = (int)((double)currentStep / settings.MaxSteps * ProgressBars.COMPLETED_PERCENTAGE) ,
+                        Percentage = (int)((double)currentStep / maxSteps * ProgressBars.COMPLETED_PERCENTAGE) ,
                         CurrentStep = currentStep ,
-                        MaxSteps = settings.MaxSteps ,
+                        MaxSteps = maxSteps ,
                         CurrentAction = string.Format(Constants.ToolTasks.AI_EXECUTING_TASK , "ExecuteWithToolSupportAsync") ,
                         Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
                     };
@@ -525,7 +529,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                         {
                             Percentage = ProgressBars.COMPLETED_PERCENTAGE ,
                             CurrentStep = currentStep ,
-                            MaxSteps = settings.MaxSteps ,
+                            MaxSteps = maxSteps ,
                             CurrentAction = Constants.ExecutionStatus.AI_COMPLETES_TASK ,
                             Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
                         };
@@ -546,7 +550,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                         {
                             Percentage = ProgressBars.COMPLETED_PERCENTAGE ,
                             CurrentStep = currentStep ,
-                            MaxSteps = settings.MaxSteps ,
+                            MaxSteps = maxSteps ,
                             CurrentAction = Constants.ExecutionStatus.AI_COMPLETES_TASK ,
                             Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
                         };
@@ -624,9 +628,9 @@ namespace AiUtility.GeminiUtilityServices.Services
 
                 p = new TProgress
                 {
-                    Percentage = (int)((double)(currentStep - 1) / settings.MaxSteps * AiUtility.AiBaseUtilityServices.Consts.Constants.ProgressBars.COMPLETED_PERCENTAGE) ,
+                    Percentage = (int)((double)(currentStep - 1) / maxSteps * AiUtility.AiBaseUtilityServices.Consts.Constants.ProgressBars.COMPLETED_PERCENTAGE) ,
                     CurrentStep = currentStep ,
-                    MaxSteps = settings.MaxSteps ,
+                    MaxSteps = maxSteps ,
                     CurrentAction = Constants.ExecutionStatus.AI_COMPLETES_TASK ,
                     Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
                 };
@@ -637,9 +641,9 @@ namespace AiUtility.GeminiUtilityServices.Services
 
             }
 
-            if(currentStep >= settings.MaxSteps)
+            if(currentStep >= maxSteps)
             {
-                var messageStr = string.Format(AiUtility.AiBaseUtilityServices.Consts.Constants.Messages.FailureMessages.MAX_STEPS_REACHED_FORMAT , settings.MaxSteps);
+                var messageStr = string.Format(AiUtility.AiBaseUtilityServices.Consts.Constants.Messages.FailureMessages.MAX_STEPS_REACHED_FORMAT , maxSteps);
                 LogFailureWhenExecutingTool(_logger , messageStr);
                 statusJsonModel.IsSuccess = false;
                 statusJsonModel.Result = messageStr;
@@ -655,7 +659,7 @@ namespace AiUtility.GeminiUtilityServices.Services
             {
                 Percentage = AiUtility.AiBaseUtilityServices.Consts.Constants.ProgressBars.COMPLETED_PERCENTAGE ,
                 CurrentStep = currentStep ,
-                MaxSteps = settings.MaxSteps ,
+                MaxSteps = maxSteps ,
                 CurrentAction = AiUtility.AiBaseUtilityServices.Consts.Constants.ExecutionStatus.AI_COMPLETES_TASK ,
                 Metadata = settings.Metadata != null ? new Dictionary<string , string>(settings.Metadata) : new() ,
             };
