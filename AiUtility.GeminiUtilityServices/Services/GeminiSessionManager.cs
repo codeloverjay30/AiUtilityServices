@@ -112,6 +112,8 @@ namespace AiUtility.GeminiUtilityServices.Services
             IProgress<TProgress>? progressBar = null
         ) where TProgress : WorkflowProgress, new() // 限制必須繼承自基礎模型
         {
+            ArgumentNullException.ThrowIfNull(userTask);
+
             return await ExecuteWithToolSupportAsync<TProgress>(request, userTask.AsMemory() , settings , ct, progressBar);
         }
         /// <summary>
@@ -132,6 +134,20 @@ namespace AiUtility.GeminiUtilityServices.Services
             IProgress<TProgress>? progressBar = null
         ) where TProgress : WorkflowProgress, new() // 限制必須繼承自基礎模型
         {
+            ArgumentNullException.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(settings);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(
+                settings.MaxSteps, nameof(settings.MaxSteps));
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(
+                settings.ToolExecutionTimeout.TotalMilliseconds,
+                nameof(settings.ToolExecutionTimeout));
+
+            if (userTask.IsEmpty)
+            {
+                throw new ArgumentException(
+                    "User task cannot be empty.", nameof(userTask));
+            }
+
             StatusJsonModels statusJsonModels = new StatusJsonModels();
             StatusJsonModel statusJsonModel = new StatusJsonModel
             {
@@ -385,6 +401,8 @@ namespace AiUtility.GeminiUtilityServices.Services
             IProgress<TProgress>? progressBar = null
         ) where TProgress : WorkflowProgress, new() // 限制必須繼承自基礎模型
         {
+            ArgumentNullException.ThrowIfNull(userTask);
+
             return await WithExecuteWithToolSupportAsync(request , userTask.AsMemory() , settings , ct , progressBar);
         }
 
@@ -407,6 +425,20 @@ namespace AiUtility.GeminiUtilityServices.Services
             IProgress<TProgress>? progressBar = null
         ) where TProgress : WorkflowProgress, new() // 限制必須繼承自基礎模型
         {
+            ArgumentNullException.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(settings);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(
+                settings.MaxSteps, nameof(settings.MaxSteps));
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(
+                settings.ToolExecutionTimeout.TotalMilliseconds,
+                nameof(settings.ToolExecutionTimeout));
+
+            if (userTask.IsEmpty)
+            {
+                throw new ArgumentException(
+                    "User task cannot be empty.", nameof(userTask));
+            }
+
             StatusJsonModels statusJsonModels = new StatusJsonModels();
             StatusJsonModel statusJsonModel = new StatusJsonModel
             {
