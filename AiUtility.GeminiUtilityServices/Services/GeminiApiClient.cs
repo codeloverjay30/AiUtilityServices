@@ -20,6 +20,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using AiUtility.GeminiUtilityServices.Configs;
+using AiUtility.GeminiKits.Models;
 
 namespace AiUtility.GeminiUtilityServices.Services
 {
@@ -37,8 +38,59 @@ namespace AiUtility.GeminiUtilityServices.Services
 
         private ILogger _logger => _loggerFactoryService.Logger;
 
-        [LoggerMessage(Level = LogLevel.Error , Message = "An exception occured at `GenerateContentAsync` method!!! {ErrorDescription}!!! Error message: {ErrorMessage}")]
+        [LoggerMessage(Level = LogLevel.Error, Message = "An exception occured at `GenerateContentAsync` method!!! {ErrorDescription}!!! Error message: {ErrorMessage}")]
         static partial void LogExcpetionWhenGeneratingContent(ILogger logger, string ErrorDescription, string ErrorMessage);
+
+        /// <summary>
+        /// Logs the serialized Gemini API request payload for diagnostic purposes.
+        /// </summary>
+        /// <param name="logger">
+        /// The logger instance.
+        /// </param>
+        /// <param name="payload">
+        /// The serialized Gemini API request payload.
+        /// </param>
+        [LoggerMessage(
+            Level = LogLevel.Information,
+            Message = "Gemini API request payload: {Payload}")]
+        private static partial void LogGeminiRequestPayload(
+            ILogger logger,
+            string payload);
+
+        /// <summary>
+        /// Logs the runtime assemblies used by the Gemini API client and tool declaration.
+        /// </summary>
+        /// <param name="logger">
+        /// The logger instance.
+        /// </param>
+        /// <param name="apiClientAssembly">
+        /// The Gemini API client assembly identity.
+        /// </param>
+        /// <param name="apiClientLocation">
+        /// The Gemini API client assembly location.
+        /// </param>
+        /// <param name="toolAssembly">
+        /// The Gemini tool declaration assembly identity.
+        /// </param>
+        /// <param name="toolLocation">
+        /// The Gemini tool declaration assembly location.
+        /// </param>
+        [LoggerMessage(
+            Level = LogLevel.Information,
+            Message =
+                "Gemini runtime assemblies. " +
+                "ApiClientAssembly={ApiClientAssembly}, " +
+                "ApiClientLocation={ApiClientLocation}, " +
+                "ToolAssembly={ToolAssembly}, " +
+                "ToolLocation={ToolLocation}")]
+        private static partial void LogGeminiRuntimeAssembly(
+            ILogger logger,
+            string apiClientAssembly,
+            string apiClientLocation,
+            string toolAssembly,
+            string toolLocation);
+
+
         public required HttpClient HttpClient { get; init; }
         public required string ApiKey { get; init; } = string.Empty;
         public required GeminiApiOptions ApiOptions { get; init; }
@@ -71,8 +123,30 @@ namespace AiUtility.GeminiUtilityServices.Services
         {
             await ValidateRequestAsync(request , new GeminiGenerateRequestValidator());
 
+            LogGeminiRuntimeAssembly(
+                _logger,
+                typeof(GeminiApiClient)
+                    .Assembly
+                    .FullName
+                    ?? string.Empty,
+                typeof(GeminiApiClient)
+                    .Assembly
+                    .Location,
+                typeof(GeminiToolDeclaration)
+                    .Assembly
+                    .FullName
+                    ?? string.Empty,
+                typeof(GeminiToolDeclaration)
+                    .Assembly
+                    .Location);
+
             var apiPayload = request.ToGoogleApiRequest();
-            var json = JsonSerializer.Serialize(apiPayload , _options);
+            var json = JsonSerializer.Serialize(apiPayload, _options);
+
+            LogGeminiRequestPayload(
+                _logger,
+                json);
+
             var content = new StringContent(
                 json ,
                 Encoding.UTF8 ,
@@ -91,7 +165,7 @@ namespace AiUtility.GeminiUtilityServices.Services
             // 直接反序列化為強型別物件
             var result = JsonSerializer.Deserialize<GeminiResponse>(jsonResponse , _options);
 
-            // throw FormatException indicating a parse exception occured when parsing json data.            
+            // throw FormatException indicating a parse exception occured when parsing json data.
             return result ?? throw new FormatException(AiUtility.AiBaseUtilityServices.Consts.Constants.Messages.FailureMessages.AI_API_RUNTIME_PARSE_EXCEPTION);
         }
 
