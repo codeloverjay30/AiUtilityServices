@@ -50,6 +50,32 @@ namespace AiUtility.GeminiUtilityServices.Services
             string ToolName);
 
         /// <summary>
+        /// Logs the structure of a Gemini candidate response.
+        /// </summary>
+        /// <param name="logger">
+        /// The logger instance.
+        /// </param>
+        /// <param name="partCount">
+        /// The number of parts returned by Gemini.
+        /// </param>
+        /// <param name="functionCallCount">
+        /// The number of function calls contained in the response.
+        /// </param>
+        /// <param name="hasText">
+        /// Indicates whether textual content exists in the response.
+        /// </param>
+        [LoggerMessage(
+            Level = LogLevel.Information,
+            Message =
+                "Gemini response received. PartCount={PartCount}, " +
+                "FunctionCallCount={FunctionCallCount}, HasText={HasText}")]
+        private static partial void LogGeminiResponseStructure(
+            ILogger logger,
+            int partCount,
+            int functionCallCount,
+            bool hasText);
+
+        /// <summary>
         /// Logs an exception that occurs while executing a Gemini tool.
         /// </summary>
         /// <param name="logger">
@@ -257,6 +283,7 @@ namespace AiUtility.GeminiUtilityServices.Services
 
                     // 4. 檢查是否為文字回應 (AI 給出了最終答案)
                     var textPart = parts.FirstOrDefault(static part => !part.RawText.IsEmpty);
+                    LogGeminiResponseStructure(_logger, parts.Count, functionCalls.Count, textPart is not null);
                     if(functionCalls.Count == 0 && candidate != null && textPart is not null)
                     {
                         // AI 給了答案
@@ -577,6 +604,7 @@ namespace AiUtility.GeminiUtilityServices.Services
 
                     // 4. 檢查是否為文字回應 (AI 給出了最終答案)
                     var textPart = parts.FirstOrDefault(static part => !part.RawText.IsEmpty);
+                    LogGeminiResponseStructure(_logger, parts.Count, functionCalls.Count, textPart is not null);
                     if(functionCalls.Count == 0 && candidate != null && textPart is not null)
                     {
                         // 在回傳前，別忘了把 AI 的最後這句話也加入對話紀錄，保持 Session 連貫
