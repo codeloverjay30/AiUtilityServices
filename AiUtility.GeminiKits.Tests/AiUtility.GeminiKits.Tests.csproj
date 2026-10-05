@@ -19,6 +19,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AiUtility.GeminiKits\AiUtility.GeminiKits.csproj" />
+    <ProjectReference Include="..\AiUtility.GeminiKits.TestFixtures\AiUtility.GeminiKits.TestFixtures.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

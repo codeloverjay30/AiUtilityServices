@@ -4,6 +4,7 @@
   <Project Path="AiUtility.ToolKits/AiUtility.ToolKits.csproj" />
   <Project Path="AiUtility.GeminiKits/AiUtility.GeminiKits.csproj" />
   <Project Path="AiUtility.GeminiUtilityServices/AiUtility.GeminiUtilityServices.csproj" />
+  <Project Path="AiUtility.GeminiKits.TestFixtures/AiUtility.GeminiKits.TestFixtures.csproj" />
   <Project Path="AiUtility.GeminiKits.Tests/AiUtility.GeminiKits.Tests.csproj" />
   <Project Path="AiUtility.GeminiUtilityServices.Models.Tests/AiUtility.GeminiUtilityServices.Models.Tests.csproj" />
   <Project Path="AiUtility.GeminiUtilityServices.Tests/AiUtility.GeminiUtilityServices.Tests.csproj" />
