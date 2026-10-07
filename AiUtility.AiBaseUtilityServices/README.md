@@ -46,3 +46,16 @@ Utility base class of API of AI model.
 ## 5.2.0-preview-1.0.0
 ### Fixed
 + Fix the `FormatException` thrown by `WorkflowProgress.ToString()`.
+
+## 5.3.0-preview-1.0.0
+### Update
++ No update
+
+## 5.4.0-preview-1.0.0
+### Update
++ No update
+
+## 5.4.1-preview-1.0.0
+### Fix
++ Fix `#17`: `AiExecutionSettings.LastTokenCountNeededToBeKept`s defaults to an invalid value
+ 
