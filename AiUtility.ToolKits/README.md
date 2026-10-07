@@ -41,3 +41,10 @@ Utility toolkit used for AI Agents.
 ## 5.2.0-preview-1.0.0
 ### Fixed
 + Fix the NRE exception.
+
+## 5.3.0-preview-1.0.0
+### Update
++ No update
+
+### Fixed
++ Fix `#16`
