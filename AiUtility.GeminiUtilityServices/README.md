@@ -205,3 +205,7 @@ and convert `ReadyOnlyMemory<byte>` instance to `string` (and vice versa).
 ## 7.8.0-preview-1.0.0
 ### Update
 + No update
+
+## 7.9.0-preview-1.0.0
+### Fixed
++ Fix `#20`

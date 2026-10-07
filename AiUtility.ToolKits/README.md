@@ -11,7 +11,7 @@ Utility toolkit used for AI Agents.
 + Write the `README.md`
 
 ## 1.0.2-preview-1.0.0
-### Changed
+6`### Changed
 + Update the PackageTag to `ToolKit`
 
 ## 3.0.0-preview-1.0.0
@@ -46,5 +46,10 @@ Utility toolkit used for AI Agents.
 ### Update
 + No update
 
+## 5.4.0-preview-1.0.0
 ### Fixed
-+ Fix `#16`
++ Fix `#18`
+
+## 5.5.0-preview-1.0.0
+### Fixed
++ Fix `#19`

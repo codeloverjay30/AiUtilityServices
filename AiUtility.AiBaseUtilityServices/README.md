@@ -59,3 +59,7 @@ Utility base class of API of AI model.
 ### Fix
 + Fix `#17`: `AiExecutionSettings.LastTokenCountNeededToBeKept`s defaults to an invalid value
  
+## 5.5.0-preview-1.0.0
+### Update
++ No update
+
