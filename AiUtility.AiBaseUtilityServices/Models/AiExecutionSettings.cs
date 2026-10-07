@@ -14,8 +14,12 @@ namespace AiUtility.AiBaseUtilityServices.Models
         /// <summary>
         /// The last n tokens to keep when consolidating the token.
         /// </summary>
-        [Range(1 , int.MaxValue , ErrorMessage = Constants.Constraints.ValueConstraints.VALUE_MUST_BE_POSITIVE)]
-        public int LastTokenCountNeededToBeKept { get; set; }
+        /// <remarks>
+        /// When it is not specified, the default value is 5. 
+        /// It must be a positive integer.
+        /// </remarks>
+        [Range(1, int.MaxValue, ErrorMessage = Constants.Constraints.ValueConstraints.VALUE_MUST_BE_POSITIVE)]
+        public int LastTokenCountNeededToBeKept { get; set; } = 5;
 
         /// <summary>
         /// Max steps in one task by automatically engine (<seealso cref="AiUtility.GeminiUtilityServices.Services.GeminiSessionManager.ExecuteAutomationStepAsync(GeminiGenerateRequest, string, AiExecutionSettings, CancellationToken)"/>
