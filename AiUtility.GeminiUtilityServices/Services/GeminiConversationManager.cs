@@ -104,7 +104,7 @@ namespace AiUtility.GeminiUtilityServices.Services
                 // 3. 呼叫底層 Gemini API 
                 // 這裡應整合 Polly 等重試機制，處理 429 (Rate Limit) 或 503 錯誤
                 var response = await _client.GenerateContentAsync(
-                    request ,
+                    clone ,
                     ct
                 );
 
