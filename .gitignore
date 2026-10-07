@@ -1,3 +1,9 @@
+out
+node_modules
+.vscode-test/
+
+*.vsix
+
 # Add patterns to ignore here, one per line
 
 ### ============================================ ###
@@ -23,11 +29,32 @@
 ### --- AND THUS HARDCODED --- ###
 ### --- DON'T DELETE IT --- ###
 ### --- OTHERWISE, IT MIGHT NOT PASS THE BUILD --- ###
+### --- AND SHOULD NIETHER GIT NOR PACKED BY REPOMIX --- ###
+### --- THUS JUST IGNORE IT --- ###
 ### --------------------------------------------------------------------------------------------------------- ###
 
 # custom folder
 ## local packages
 local-packages
+
+
+### --------------------------------------------------------------------------------------------------------- ###
+### --- END OF COMMENT --- ###
+### --------------------------------------------------------------------------------------------------------- ###
+
+### --------------------------------------------------------------------------------------------------------- ###
+### --- THESE ENTRIES ARE SPECIFIC (AND IT IS USED FOR PASS THE BUILD (MSBUILD) THAT USES MY CUSTOM CONFIGURATIONS) --- ###
+### --- AND THUS HARDCODED --- ###
+### --- DON'T DELETE IT --- ###
+### --- AND SHOULD NIETHER GIT NOR PACKED BY REPOMIX --- ###
+### --- THUS JUST IGNORE IT --- ###
+### --------------------------------------------------------------------------------------------------------- ###
+
+# custom folder
+## custom commands
+command-templates
+commands/
+command/
 
 ### --------------------------------------------------------------------------------------------------------- ###
 ### --- END OF COMMENT --- ###
@@ -38,562 +65,348 @@ local-packages
 [Tt]emp/
 *-[Tt]emp
 
-# Generated File or scripts
-.vscode-debug-eval.cs
-.vscode-debug-eval.*.cs
+### ... and others (swap files, PID files, session temp files)
+*.swp
+*.pid
+*.lock-s
 
-# scripts
-*.ps1
-*.psm1
+# lock file
+*.lock
+*-lock
 
-*.cmd
+### ... and others (package manager and dependency locks)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+paket.lock
 
-# backup files
-*.bak
+# cached
+*.cache
+*.cached
+*-cache
+*-cached
 
-# my idea
-ideas/
-
-# file that contains file structure
-*-repomix-output.md
-
-# nuke Build tool
-.nuke/
-
-# github settings
-## github actions
-## .github/workflows/
-.github/
-
-# gitlab settings
-.gitlab/
-
-
-# documentation files
-docs/
-
-*.md
-
-# Attachments
-*.eml
-*.msg
-Attachments/
-Attachment/
-
-# readme files
-!README.md
-
-# secure configuration
-*.config.json5
-*.config.json
-
-# NuGet configuration
-.nuget.config
-
-# .NET SDK runtime setting
-global.json
-
-# cached directory after building
-bin/
-obj/
-[Aa]rtifacts/
-.[Aa]rtifacts
-
-# cached result for watching panel of VSC
-.vscode-debug-eval.cs
-*/.vscode-debug-eval.cs
-
-# dotenv files
-.env
-
-# User-specific files
-*.rsuser
+### ... and others (temporary workspace cache)
 *.suo
 *.user
 *.userosscache
-*.sln.docstates
 
-# User-specific files (MonoDevelop/Xamarin Studio)
-*.userprefs
-
-# Mono auto generated files
-mono_crash.*
-
-# Build results
-[Dd]ebug/
-[Dd]ebugPublic/
-[Rr]elease/
-[Rr]eleases/
-x64/
-x86/
-[Ww][Ii][Nn]32/
-[Aa][Rr][Mm]/
-[Aa][Rr][Mm]64/
-bld/
+# cached file about .NET
 [Bb]in/
 [Oo]bj/
-[Ll]og/
-[Ll]ogs/
 
-# Visual Studio 2015/2017 cache/options directory
-.vs/
+### ... and others (.NET build artifacts and localized outputs)
+[Aa]rtifacts/
+.[Aa]rtifacts/
+_ReSharper*/
 
-# Visual Studio 2015/2017 backup directory
+# AI
+## Gemini
+GEMINI.md
+
+## cline
+.clinerules
+
+## rule
+ai-rule.md
+
+# packaging file tool
+## repomix
+.repomix
+**/.repomix
+
+# (On Windows) system configuration files
+*.ini
+*.sys
+
+### ... and others (Windows specific configuration and registry templates)
+*.reg
+*.inf
+*.cfg
+*.manifest
+Thumbs.db
+
+# CLI script or module
+*.bat
+*.cmd
+*.sh
+*.ps1
+*.psm1
+
+### ... and others (PowerShell modules and shell environment scripts)
+*.psd1
+*.pssc
+*.bashrc
+*.zshrc
+
+# backups
+*.bak
+*-bak
+
+### ... and others (versioned or historical backups)
+*.old
+*-old
+*.none
+*-none
+*._bak
+~*
+
+# outputs
+*.out
+*-out
+[Oo]utput/
+[Oo]ut/
+
+# package manager
+## Node.js
+node_modules/
+dist/
+
+# VS plugins
+## vsix
+*.vsix
+
+# VS plugins backup
 .vshistory/
 
-# Visual Studio Code cahced directory
-.vscode/
-
-# Uncomment if you have tasks that create the project's static files in wwwroot
-wwwroot/
-
-# Visual Studio 2017 auto generated files
-Generated\ Files/
-
-# MSTest test Results
-[Tt]est[Rr]esult*/
-[Bb]uild[Ll]og.*
-
-# NUnit
-*.VisualState.xml
-TestResult.xml
-nunit-*.xml
-
-# Build Results of an ATL Project
-[Dd]ebugPS/
-[Rr]eleasePS/
-dlldata.c
-
-# Benchmark Results
-BenchmarkDotNet.Artifacts/
-
-# .NET
-project.lock.json
-project.fragment.lock.json
-artifacts/
-
-# Tye
-.tye/
-
-# ASP.NET Scaffolding
-ScaffoldingReadMe.txt
-
-# StyleCop
-StyleCopReport.xml
-
-# Files built by Visual Studio
-*_i.c
-*_p.c
-*_h.h
-*.ilk
-*.meta
-*.obj
-*.iobj
-*.pch
-*.pdb
-*.ipdb
-*.pgc
-*.pgd
-*.rsp
-# but not Directory.Build.rsp, as it configures directory-level build defaults
-!Directory.Build.rsp
-*.sbr
-*.tlb
-*.tli
-*.tlh
-*.tmp
-*.tmp_proj
-*_wpftmp.csproj
-*.log
-*.tlog
-*.vspscc
-*.vssscc
-.builds
-*.pidb
-*.svclog
-*.scc
-
-# Chutzpah Test files
-_Chutzpah*
-
-# Visual C++ cache files
-ipch/
-*.aps
-*.ncb
-*.opendb
-*.opensdf
-*.sdf
-*.cachefile
-*.VC.db
-*.VC.VC.opendb
-
-# Visual Studio profiler
-*.psess
-*.vsp
-*.vspx
-*.sap
-
-# Visual Studio Trace Files
-*.e2e
-
-# TFS 2012 Local Workspace
-$tf/
-
-# Guidance Automation Toolkit
-*.gpState
-
-# ReSharper is a .NET coding add-in
-_ReSharper*/
-*.[Rr]e[Ss]harper
-*.DotSettings.user
-
-# TeamCity is a build add-in
-_TeamCity*
-
-# DotCover is a Code Coverage Tool
-*.dotCover
-
-# AxoCover is a Code Coverage Tool
-.axoCover/*
-!.axoCover/settings.json
-
-# Coverlet is a free, cross platform Code Coverage Tool
-coverage*.json
-coverage*.xml
-coverage*.info
-
-# Visual Studio code coverage results
-*.coverage
-*.coveragexml
-
-# NCrunch
-_NCrunch_*
-.*crunch*.local.xml
-nCrunchTemp_*
-
-# MightyMoose
-*.mm.*
-AutoTest.Net/
-
-# Web workbench (sass)
-.sass-cache/
-
-# Installshield output folder
-[Ee]xpress/
-
-# DocProject is a documentation generator add-in
-DocProject/buildhelp/
-DocProject/Help/*.HxT
-DocProject/Help/*.HxC
-DocProject/Help/*.hhc
-DocProject/Help/*.hhk
-DocProject/Help/*.hhp
-DocProject/Help/Html2
-DocProject/Help/html
-
-# Click-Once directory
-publish/
-
-# Publish Web Output
-*.[Pp]ublish.xml
-*.azurePubxml
-# Note: Comment the next line if you want to checkin your web deploy settings,
-# but database connection strings (with potential passwords) will be unencrypted
-*.pubxml
-*.publishproj
-
-# Microsoft Azure Web App publish settings. Comment the next line if you want to
-# checkin your Azure Web App publish settings, but sensitive information contained
-# in these scripts will be unencrypted
-PublishScripts/
-
-# NuGet Packages
-*.nupkg
-# NuGet Symbol Packages
-*.snupkg
-# The packages folder can be ignored because of Package Restore
-**/[Pp]ackages/*
-# except build/, which is used as an MSBuild target.
-!**/[Pp]ackages/build/
-# Uncomment if necessary however generally it will be regenerated when needed
-#!**/[Pp]ackages/repositories.config
-# NuGet v3's project.json files produces more ignorable files
-*.nuget.props
-*.nuget.targets
-
-# Microsoft Azure Build Output
-csx/
-*.build.csdef
-
-# Microsoft Azure Emulator
-ecf/
-rcf/
-
-# Windows Store app package directories and files
-AppPackages/
-BundleArtifacts/
-Package.StoreAssociation.xml
-_pkginfo.txt
-*.appx
-*.appxbundle
-*.appxupload
-
-# Visual Studio cache files
-# files ending in .cache can be ignored
-*.[Cc]ache
-# but keep track of directories ending in .cache
-!?*.[Cc]ache/
-
-# Others
-ClientBin/
-~$*
-*~
-*.dbmdl
-*.dbproj.schemaview
-*.jfm
-*.pfx
-*.publishsettings
-orleans.codegen.cs
-
-# Including strong name files can present a security risk
-# (https://github.com/github/gitignore/pull/2483#issue-259490424)
-#*.snk
-
-# Since there are multiple workflows, uncomment next line to ignore bower_components
-# (https://github.com/github/gitignore/pull/1529#issuecomment-104372622)
-#bower_components/
-
-# RIA/Silverlight projects
-Generated_Code/
-
-# Backup & report files from converting an old project file
-# to a newer Visual Studio version. Backup files are not needed,
-# because we have git ;-)
-_UpgradeReport_Files/
-Backup*/
-UpgradeLog*.XML
-UpgradeLog*.htm
-ServiceFabricBackup/
-*.rptproj.bak
-
-# SQL Server files
-*.mdf
-*.ldf
-*.ndf
-
-# Business Intelligence projects
-*.rdl.data
-*.bim.layout
-*.bim_*.settings
-*.rptproj.rsuser
-*- [Bb]ackup.rdl
-*- [Bb]ackup ([0-9]).rdl
-*- [Bb]ackup ([0-9][0-9]).rdl
-
-# Microsoft Fakes
-FakesAssemblies/
-
-# GhostDoc plugin setting file
-*.GhostDoc.xml
-
-# Node.js Tools for Visual Studio
-.ntvs_analysis.dat
-node_modules/
-
-# Visual Studio 6 build log
-*.plg
-
-# Visual Studio 6 workspace options file
-*.opt
-
-# Visual Studio 6 auto-generated workspace file (contains which files were open etc.)
-*.vbw
-
-# Visual Studio 6 auto-generated project file (contains which files were open etc.)
-*.vbp
-
-# Visual Studio 6 workspace and project file (working project files containing files to include in project)
-*.dsw
-*.dsp
-
-# Visual Studio 6 technical files
-*.ncb
-*.aps
-
-# Visual Studio LightSwitch build output
-**/*.HTMLClient/GeneratedArtifacts
-**/*.DesktopClient/GeneratedArtifacts
-**/*.DesktopClient/ModelManifest.xml
-**/*.Server/GeneratedArtifacts
-**/*.Server/ModelManifest.xml
-_Pvt_Extensions
-
-# Paket dependency manager
-.paket/paket.exe
-paket-files/
-
-# FAKE - F# Make
-.fake/
-
-# CodeRush personal settings
-.cr/personal
-
-# Python Tools for Visual Studio (PTVS)
-__pycache__/
-*.pyc
-
-# Cake - Uncomment if you are using it
-# tools/**
-# !tools/packages.config
-
-# Tabs Studio
-*.tss
-
-# Telerik's JustMock configuration file
-*.jmconfig
-
-# BizTalk build output
-*.btp.cs
-*.btm.cs
-*.odx.cs
-*.xsd.cs
-
-# OpenCover UI analysis results
-OpenCover/
-
-# Azure Stream Analytics local run output
-ASALocalRun/
-
-# MSBuild Binary and Structured Log
-*.binlog
-
-# NVidia Nsight GPU debugger configuration file
-*.nvuser
-
-# MFractors (Xamarin productivity tool) working folder
-.mfractor/
-
-# Local History for Visual Studio
+### ... and others (extension local states and component caches)
+.vs/
 .localhistory/
 
-# Visual Studio History (VSHistory) files
-.vshistory/
+# log
+*.log
+*-log
+log/
+logs/
 
-# BeatPulse healthcheck temp database
-healthchecksdb
+### ... and others (diagnostic and tracing logs)
+*.trc
+*.etl
+*.svclog
 
-# Backup folder for Package Reference Convert tool in Visual Studio 2017
-MigrationBackup/
+# introductions
+*.md
+*.txt
 
-# Ionide (cross platform F# VS Code tools) working folder
-.ionide/
+### ... and others (documentation markup variations)
+*.rst
+*.adoc
 
-# Fody - auto-generated XML schema
-FodyWeavers.xsd
+# Nuke
+.nuke/
 
-# VS Code files for those working on multiple tools
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-*.code-workspace
+# Cake
+### ... omit content
+build.cake
+tools/
 
-# Local History for Visual Studio Code
-.history/
+### ... and other batch build tool
+Makefile
+Rakefile
+ant.xml
 
-# Windows Installer files from build outputs
-*.cab
-*.msi
-*.msix
-*.msm
-*.msp
+# git
+.git/
 
-# JetBrains Rider
-*.sln.iml
-.idea/
+### ... and others (Git internal hooks and attributes)
+.gitattributes
+.gitmodules
 
-##
-## Visual studio for Mac
-##
+## github
+.github/
+workflows/
 
+### ... and others (GitHub issue templates and pull request templates)
+ISSUE_TEMPLATE/
+PULL_REQUEST_TEMPLATE/
 
-# globs
-Makefile.in
-*.userprefs
-*.usertasks
-config.make
-config.status
-aclocal.m4
-install-sh
-autom4te.cache/
-*.tar.gz
-tarballs/
-test-results/
+## gitlab
+.gitlab
+workflows/
 
-# content below from: https://github.com/github/gitignore/blob/main/Global/macOS.gitignore
-# General
-.DS_Store
-.AppleDouble
-.LSOverride
+### ... and others (GitLab CI template configs)
+.gitlab-ci.yml
 
-# Icon must end with two \r
-Icon
+# license
+LICENSE
 
+### ... and others (legal and copyright notices)
+NOTICE
+PATENTS
 
-# Thumbnails
-._*
+# configuration
+*.config
+*.json
+*.json5
 
-# Files that might appear in the root of a volume
-.DocumentRevisions-V100
-.fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
-.com.apple.timemachine.donotpresent
+# configuration about Repomix
+.repomixignore
+*.repomixignore
 
-# Directories potentially created on remote AFP share
-.AppleDB
-.AppleDesktop
-Network Trash Folder
-Temporary Items
-.apdisk
+# configuration about Docker or Docker container
+**/.devcontainer/
+DockerFile
 
-# content below from: https://github.com/github/gitignore/blob/main/Global/Windows.gitignore
-# Windows thumbnail cache files
-Thumbs.db
-ehthumbs.db
-ehthumbs_vista.db
+### ... and others Docker container (Compose and overrides)
+docker-compose.yml
+docker-compose.override.yml
+.dockerignore
 
-# Dump file
-*.stackdump
+# configuration about git
+.gitignore
 
-# Folder config file
-[Dd]esktop.ini
+# configuration or rule used on AI
+## Gemini Code Assisant VSC plugin
+Gemini.md
 
-# Recycle Bin used on file shares
-$RECYCLE.BIN/
+## cline
+.clinerules
 
-# Windows Installer files
-*.cab
-*.msi
-*.msix
-*.msm
-*.msp
+## template of rule sets for ai agent
+ai-rules.md
 
-# Windows shortcuts
-*.lnk
+### ... and others AI Agent (Cursor rules, Copilot instructions)
+.cursorrules
+github-copilot-instructions.md
 
-# Vim temporary swap files
-*.swp
+# configuration about VSC
+.vscode/
+
+# configuration about VS
+.vssetting/
+.vssetting[Ss]/
+.suo/
+.vs/
+
+# configuration about .NET SDK 
+nuget.config
+
+# configuration about MonoRepo in .NET 
+*.props
+*.targets
+
+# Test project
+*.Test
+*.Test[Ss]
+
+## Test project (for vsc)
+.vscode-test/
+
+# Demo project
+*Demo
+*Demo[Ss]
+
+# special folder
+## ideas
+idea/
+idea[Ss]/
+
+## special configuration and my ideas
+my-idea-global.json5
+notification-manager-idea.md
+NotificationTarget.cs
+projects.ignore.json
+
+# images
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tif
+*.webp
+*.heic
+*.dwg
+*.psd
+*.raw
+
+### ... and others (vector graphics and raw photography formats)
+*.svg
+*.eps
+*.ai
+*.cr2
+*.nef
+
+# Office
+## Office Word
+*.docx
+*.doc
+
+### --- for older version --- ###
+*.odt
+
+## Office Excel
+*.xlsx
+xls
+
+### --- for older version --- ###
+*.ods
+
+## Office OneNote
+*.one
+*.onetoc2
+
+## Office PowerPoint
+*.pptx
+*.ppt
+
+### --- for older version --- ###
+*.odp
+
+### ... and others Office products (Visio, Project, Publisher)
+*.vsdx
+*.mpp
+*.pub
+
+# Pdf
+*.pdf
+
+# Database
+*.db
+
+# query about database
+## MySQL
+*.mssql
+
+## SQL
+*.sql
+
+## NoSQL
+*.litedb
+
+## sqlLite
+*.sqlite
+
+## MongoDB
+*.ns
+*.[0-9]
+
+*.wt
+WiredTiger
+WiredTiger.wt
+WiredTiger.lock
+
+### ... and others file about MongoDB
+*.bson
+mongod.lock
+
+### ... and other files about other differnt kinds of DB (please comment the DB kind such as #mysql (for MySQL) )
+#mssql
+*.mdf
+*.ldf
+#postgresql
+*.dump
+#oracle
+*.dmp
+
+# generated code
+## JS
+*.js
+*.js.map
 
 ### ================================================ ###
 ### === THESE MATCHING FILES WILL NOT BE IGNORED === ###
 ### ================================================ ###
-
-# README
-!**/README.md
 
 # solution configuration files
 ## newer version (at 2026)
@@ -601,7 +414,6 @@ $RECYCLE.BIN/
 
 # project configuration files
 !**/*.csproj
-!**/*.proj
 
 # configuration used by MSBuild in .NET 
 !Directory.Build.props
@@ -610,5 +422,30 @@ $RECYCLE.BIN/
 !Directory.Packages.props
 !Directory.Packages.targets
 
+# code
+# CSharp
+!*.cs
+
+# TS
+!*.ts
+
+# source code
+!src/
+
+# configuration about the vsc plugin 
+## package information
+!package.json
+
+## ts configuration
+!tsconfig.json
+
+# configuration or tasks about this project
+## for VSC
+!.vscode/
+
 ### ... and others (solution legacy file format support if needed)
 !**/*.sln
+
+# tests
+## tests code
+![Tt]ests/
