@@ -1,4 +1,5 @@
 ﻿using AiUtility.AiBaseUtilityServices.Consts;
+using CustomDataAnnotations.Validation;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -49,7 +50,7 @@ namespace AiUtility.AiBaseUtilityServices.Models
         /// When it is not specified, the default value is 30 seconds.
         /// It must be a non-negative integer.
         /// </remarks>
-        [Range(0, int.MaxValue, ErrorMessage = Constants.Constraints.ValueConstraints.TIMEOUT_MUST_BE_NONNEGATIVE)]
+        [PositiveTimeSpan(ErrorMessage = Constants.Constraints.ValueConstraints.TIMEOUT_MUST_BE_POSITIVE)]
         public TimeSpan ToolExecutionTimeout { get; set; } = Constants.Timeouts.DEFAULT_TOOL_EXECUTION_TIMEOUTS;
         /// <summary>
         /// To determine to auto-execute the tool sequentially, or not.

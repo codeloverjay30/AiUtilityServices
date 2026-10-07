@@ -204,6 +204,7 @@ namespace AiUtility.AiBaseUtilityServices.Consts
 
                 public const string MUST_BE_POSITIVE = $"must be {Vocabulary.POSITIVE}";
                 public const string VALUE_MUST_BE_POSITIVE = $"{Vocabulary.VALUE} {MUST_BE_POSITIVE}";
+                public const string TIMEOUT_MUST_BE_POSITIVE = $"{Vocabulary.TIMEOUT} must be {Vocabulary.POSITIVE}";
                 public const string MAX_OUTPUT_TOKENS_MUST_BE_POSITIVE = $"{AiModels.MAX_OUTPUT_TOKEN} {Vocabulary.VALUE} {MUST_BE_POSITIVE}";
 
                 public const string MUST_BETWEEN_ZERO_AND_TWO = $"must between 0 to 2";
