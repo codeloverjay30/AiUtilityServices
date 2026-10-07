@@ -56,7 +56,7 @@ public sealed class GeminiSessionManagerWorkflowMetadataTests
         var calls = 0;
         if (useWithPath)
         {
-            conversation.Setup(x => x.WithSendMessageAsync(
+            conversation.Setup(x => x.SendMessageAsync(
                     It.IsAny<GeminiGenerateRequest>(), It.IsAny<ReadOnlyMemory<char>>(),
                     It.IsAny<AiExecutionSettings>(), It.IsAny<CancellationToken>()))
                 .Callback(() => calls++)

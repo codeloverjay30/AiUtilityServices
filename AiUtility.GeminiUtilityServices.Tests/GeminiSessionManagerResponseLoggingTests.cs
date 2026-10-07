@@ -73,7 +73,7 @@ public sealed class GeminiSessionManagerResponseLoggingTests
         }
 
         if (useWithPath)
-            conversation.Setup(x => x.WithSendMessageAsync(
+            conversation.Setup(x => x.SendMessageAsync(
                     It.IsAny<GeminiGenerateRequest>(), It.IsAny<ReadOnlyMemory<char>>(),
                     It.IsAny<AiExecutionSettings>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((GeminiGenerateRequest request, ReadOnlyMemory<char> task,

@@ -103,7 +103,7 @@ namespace AiUtility.GeminiUtilityServices.Tests
 
             if (useWithPath)
             {
-                conversation.Setup(x => x.WithSendMessageAsync(
+                conversation.Setup(x => x.SendMessageAsync(
                         It.IsAny<GeminiGenerateRequest>(),
                         It.IsAny<ReadOnlyMemory<char>>(),
                         It.IsAny<AiExecutionSettings>(),

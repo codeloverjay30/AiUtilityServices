@@ -8,6 +8,7 @@ using CommonModels;
 using FluentAssertions;
 using LoggerFactoryUtilityServices;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.VisualBasic;
 using Moq;
 using System.Collections.Concurrent;
@@ -919,7 +920,7 @@ namespace AiUtility.GeminiUtilityServices.Tests
             var settings = new AiExecutionSettings
             {
                 ToolExecutionTimeout = TimeSpan.FromSeconds(1), //工具執行最多只能花一秒鐘 
-            }; 
+            };
             var request = new GeminiGenerateRequest();
 
             var responseWithTool = new GeminiResponse
@@ -940,9 +941,9 @@ namespace AiUtility.GeminiUtilityServices.Tests
             };
 
             _mockConversationManager.SetupSequence(x => x.SendMessageAsync(
-                It.IsAny<GeminiGenerateRequest>() ,
-                It.IsAny<ReadOnlyMemory<char>>() ,
-                It.IsAny<AiExecutionSettings>() ,
+                It.IsAny<GeminiGenerateRequest>(),
+                It.IsAny<ReadOnlyMemory<char>>(),
+                It.IsAny<AiExecutionSettings>(),
                 It.IsAny<CancellationToken>()
             ))
                 .ReturnsAsync(responseWithTool)
@@ -967,21 +968,22 @@ namespace AiUtility.GeminiUtilityServices.Tests
 
             // 模擬工具執行會超過 1 秒
             _mockToolExecutor.Setup(x => x.ExecuteAsync(
-                It.IsAny<string>() ,
-                It.IsAny<Dictionary<string , object>>() ,
+                It.IsAny<string>(),
+                It.IsAny<Dictionary<string, object>>(),
                 It.IsAny<CancellationToken>()
             ))
-                .Returns(async (string n , IDictionary<string , object> a , CancellationToken ct) => {
-                    await Task.Delay(2000 , ct); // 工具會跑 2 秒，但設定只有 1 秒
+                .Returns(async (string n, IDictionary<string, object> a, CancellationToken ct) =>
+                {
+                    await Task.Delay(2000, ct); // 工具會跑 2 秒，但設定只有 1 秒
                     return "Success";
                 });
 
-            var manager = new GeminiSessionManager(_mockLoggerFactory.Object , _mockConversationManager.Object , _mockToolService.Object , _mockToolExecutor.Object , _mockSemaphoreService.Object);
+            var manager = new GeminiSessionManager(_mockLoggerFactory.Object, _mockConversationManager.Object, _mockToolService.Object, _mockToolExecutor.Object, _mockSemaphoreService.Object);
 
             // Act
             var results = await manager.ExecuteWithToolSupportAsync<WorkflowProgress>(
-                request ,
-                "Test Timeout".AsMemory() ,
+                request,
+                "Test Timeout".AsMemory(),
                 settings
             );
 
@@ -990,7 +992,138 @@ namespace AiUtility.GeminiUtilityServices.Tests
             var timeoutStatus = results.StatusList.FirstOrDefault(s => s.DataSource.Contains("LongRunningTool"));
             Assert.NotNull(timeoutStatus);
             Assert.False(timeoutStatus.IsSuccess);
-            Assert.Contains("timeout" , timeoutStatus.OverallErrorMessage);
+            Assert.Contains("timeout", timeoutStatus.OverallErrorMessage);
+        }
+
+        [Fact]
+        public async Task WithExecuteWithToolSupportAsync_ShouldUseStandardConversationDispatchPath()
+        {
+            // Arrange
+            var loggerFactory =
+                new Mock<ILoggerFactoryBaseUtilityService>(
+                    MockBehavior.Strict);
+
+            loggerFactory
+                .SetupGet(x => x.Logger)
+                .Returns(NullLogger.Instance);
+
+            var conversationManager =
+                new Mock<IGeminiConversationManager>(
+                    MockBehavior.Strict);
+
+            conversationManager
+                .SetupGet(x => x.LastTotalTokens)
+                .Returns(0);
+
+            var toolService =
+                new Mock<IGeminiToolService>(
+                    MockBehavior.Strict);
+
+            toolService
+                .Setup(x => x.SyncToolsToRequest(
+                    It.IsAny<GeminiGenerateRequest>()));
+
+            var toolExecutor =
+                new Mock<IGeminiToolExecutor>(
+                    MockBehavior.Strict);
+
+            var semaphoreService =
+                new Mock<ISemaphoreSlimService>(
+                    MockBehavior.Strict);
+
+            semaphoreService
+                .Setup(x => x.LockWithTimeoutValueAsync(
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<TimeSpan>(),
+                    false))
+                .ReturnsAsync(Mock.Of<IDisposable>());
+
+            var response =
+                new GeminiResponse
+                {
+                    Candidates =
+                        new List<GeminiCandidate>
+                        {
+                    new()
+                    {
+                        Content =
+                            new GeminiMessage
+                            {
+                                Role = "model",
+                                Parts =
+                                    new List<GeminiPart>
+                                    {
+                                        new()
+                                        {
+                                            Text = "Completed",
+                                        },
+                                    },
+                            },
+                    },
+                        },
+                };
+
+            conversationManager
+                .Setup(x => x.SendMessageAsync(
+                    It.IsAny<GeminiGenerateRequest>(),
+                    It.IsAny<ReadOnlyMemory<char>>(),
+                    It.IsAny<AiExecutionSettings>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(response);
+
+            var manager =
+                new GeminiSessionManager(
+                    loggerFactory.Object,
+                    conversationManager.Object,
+                    toolService.Object,
+                    toolExecutor.Object,
+                    semaphoreService.Object);
+
+            var request =
+                new GeminiGenerateRequest();
+
+            var settings =
+                new AiExecutionSettings
+                {
+                    MaxSteps = 1,
+                };
+
+            // Act
+            var result =
+                await manager
+                    .WithExecuteWithToolSupportAsync<WorkflowProgress>(
+                        request,
+                        "Run task".AsMemory(),
+                        settings,
+                        CancellationToken.None);
+
+            // Assert
+            result.StatusList.Should()
+                .ContainSingle();
+
+            result.StatusList[0]
+                .IsSuccess.Should()
+                .BeTrue();
+
+            result.StatusList[0]
+                .Result.Should()
+                .Be("Completed");
+
+            conversationManager.Verify(
+                x => x.SendMessageAsync(
+                    It.IsAny<GeminiGenerateRequest>(),
+                    It.IsAny<ReadOnlyMemory<char>>(),
+                    It.IsAny<AiExecutionSettings>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+
+            conversationManager.Verify(
+                x => x.WithSendMessageAsync(
+                    It.IsAny<GeminiGenerateRequest>(),
+                    It.IsAny<ReadOnlyMemory<char>>(),
+                    It.IsAny<AiExecutionSettings>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
         }
     }
 }

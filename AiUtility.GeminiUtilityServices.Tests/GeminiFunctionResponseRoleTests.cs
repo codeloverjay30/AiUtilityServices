@@ -124,7 +124,7 @@ namespace AiUtility.GeminiUtilityServices.Tests
             if (useWithRequestPath)
             {
                 conversationManager
-                    .Setup(x => x.WithSendMessageAsync(
+                    .Setup(x => x.SendMessageAsync(
                         It.IsAny<GeminiGenerateRequest>(),
                         It.IsAny<ReadOnlyMemory<char>>(),
                         It.IsAny<AiExecutionSettings>(),
