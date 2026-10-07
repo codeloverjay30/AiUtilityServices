@@ -285,10 +285,6 @@ nuget.config
 *.props
 *.targets
 
-# Test project
-*.Test
-*.Test[Ss]
-
 ## Test project (for vsc)
 .vscode-test/
 
@@ -448,4 +444,4 @@ mongod.lock
 
 # tests
 ## tests code
-![Tt]ests/
+!**[Tt]ests/
