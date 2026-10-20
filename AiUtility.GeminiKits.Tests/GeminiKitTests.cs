@@ -323,6 +323,9 @@ namespace AiUtility.GeminiKits.Tests
                         "Wait",
                         "GetStatus",
                         "GetAnswer",
+                        // Integration-test fixtures are also discovered by assembly scanning.
+                        "ClickAbsolute",
+                        "PlannerClick",
                     ]);
         }
 
