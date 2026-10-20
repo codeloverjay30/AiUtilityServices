@@ -1,105 +1,103 @@
 ﻿using AiUtility.GeminiKits.Abstractions;
-using AiUtility.GeminiKits.Registry;
-using System;
-using System.Collections.Generic;
+using AiUtility.GeminiKits.Security;
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
-using System.Text;
 using TypeUtilityServices;
 
-namespace AiUtility.GeminiKits.Services
+namespace AiUtility.GeminiKits.Services;
+
+/// <summary>
+/// Dispatches registered Gemini tools after enforcing execution authorization.
+/// </summary>
+public class GeminiToolDispatcher : IGeminiToolDispatcher
 {
-    public class GeminiToolDispatcher : IGeminiToolDispatcher
+    private readonly IGeminiToolRegistry _toolRegistry;
+    private readonly ITypeUtilityService _typeUtilityService;
+    private readonly GeminiToolExecutionPolicy _policy;
+
+    public IGeminiToolRegistry ToolRegistry => _toolRegistry;
+    public ITypeUtilityService TypeUtilityService => _typeUtilityService;
+
+    /// <summary>
+    /// Initializes the dispatcher with an optional explicit execution policy.
+    /// </summary>
+    public GeminiToolDispatcher(
+        IGeminiToolRegistry toolRegistry,
+        ITypeUtilityService typeUtilityService,
+        GeminiToolExecutionPolicy? policy = null)
     {
-        private readonly IGeminiToolRegistry _toolRegistry;
-        public IGeminiToolRegistry ToolRegistry => _toolRegistry;
+        _toolRegistry = toolRegistry ?? throw new ArgumentNullException(nameof(toolRegistry));
+        _typeUtilityService = typeUtilityService ?? throw new ArgumentNullException(nameof(typeUtilityService));
+        _policy = policy ?? GeminiToolExecutionPolicy.AllowRegisteredTools();
+    }
 
-        private readonly ITypeUtilityService _typeUtilityService;
-        public ITypeUtilityService TypeUtilityService => _typeUtilityService;
+    /// <summary>
+    /// Dispatches a registered and authorized Gemini tool.
+    /// </summary>
+    public async Task<object?> DispatchAsync(
+        string functionName,
+        Dictionary<string, object> arguments,
+        CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(functionName);
+        ArgumentNullException.ThrowIfNull(arguments);
+        ct.ThrowIfCancellationRequested();
 
-        public GeminiToolDispatcher(
-            IGeminiToolRegistry toolRegistry,
-            ITypeUtilityService typeUtilityService
-        )
+        if (!_toolRegistry.TryGetTool(functionName, out var metadata) || metadata is null)
         {
-            _toolRegistry = toolRegistry;
-            _typeUtilityService = typeUtilityService;
+            throw new KeyNotFoundException($"[Dispatcher] 找不到名稱為 '{functionName}' 的工具。");
         }
 
-        /// <summary>
-        /// Dispatch the task from registered cached tool and auto execute it.
-        /// </summary>
-        /// <param name="functionName"></param>
-        /// <param name="arguments"></param>
-        /// <returns></returns>
-        /// <exception cref="KeyNotFoundException"></exception>
-        public async Task<object?> DispatchAsync(
-            string functionName , 
-            Dictionary<string , object> arguments,
-            CancellationToken ct = default
-        )
+        _policy.EnsureAllowed(metadata.MethodInfo);
+        var parameters = metadata.Parameters;
+        object?[] paramValues = new object?[parameters.Length];
+
+        for (int i = 0; i < parameters.Length; i++)
         {
-            // 1. 從 Registry 尋找工具 Metadata
-            if(!_toolRegistry.TryGetTool(functionName , out var metadata))
+            var param = parameters[i];
+            if (param.ParameterType == typeof(CancellationToken))
             {
-                throw new KeyNotFoundException($"[Dispatcher] 找不到名稱為 '{functionName}' 的工具。");
+                paramValues[i] = ct;
+                continue;
             }
 
-            var parameters = metadata.Parameters;
-            object? [ ] paramValues = new object? [ parameters.Length ];
-
-            // 2. 參數對照與 Data Annotations 驗證
-            for(int i = 0; i < parameters.Length; i++)
+            object? value;
+            if (arguments.TryGetValue(param.Name!, out var supplied))
             {
-                var param = parameters [ i ];
-                arguments.TryGetValue(param.Name! , out var val);
-                if (param.ParameterType == typeof(CancellationToken))
-                {
-                    paramValues[i] = ct;
-                    continue;
-                }
-
-                // Match argument dictionary to method parameters
-                if (arguments.TryGetValue(param.Name!, out var value))
-                {
-                    // Use ITypeUtilityService to ensure the value matches the expected parameter type
-                    paramValues[i] = _typeUtilityService.SafeConvert(value, param.ParameterType);
-                }
-                else if (param.HasDefaultValue)
-                {
-                    paramValues[i] = param.DefaultValue;
-                }
-                else
-                {
-                    throw new ArgumentException($"Missing required argument: {param.Name}");
-                }
-                
-                // 執行參數等級的驗證 (例如 [Required], [Range], [StringLength])
-                var validationAttrs = param.GetCustomAttributes<ValidationAttribute>();
-                foreach(var attr in validationAttrs)
-                {
-                    // 若驗證失敗會拋出 ValidationException
-                    attr.Validate(val , param.Name ?? "Parameter");
-                }
-
-                paramValues [ i ] = val;
+                value = _typeUtilityService.SafeConvert(supplied, param.ParameterType);
+            }
+            else if (param.HasDefaultValue)
+            {
+                value = param.DefaultValue;
+            }
+            else
+            {
+                throw new ArgumentException($"Missing required argument: {param.Name}", nameof(arguments));
             }
 
-            // 3. 取得 POCO 實例 (取代原有的 _serviceInstances)
-            // 如果是靜態方法，fac 會是 null；如果是實例方法，會透過 Registry 註冊的工廠產生實例
-            var instance = metadata.InstanceFactory?.Invoke();
-
-            // 4. 高效執行 (使用 FastDelegate)
-            // 注意：DispatchAsync 為非同步，若目標方法是 Task，這裡需處理 Await
-            var result = metadata.FastInvoke(instance , paramValues);
-
-            if(result is Task task)
+            foreach (var attribute in param.GetCustomAttributes<ValidationAttribute>())
             {
-                await task.ConfigureAwait(false);
-                return task.GetType().GetProperty("Result")?.GetValue(task);
+                attribute.Validate(value, param.Name ?? "Parameter");
             }
 
+            paramValues[i] = value;
+        }
+
+        object? instance = null;
+        if (!metadata.MethodInfo.IsStatic)
+        {
+            instance = metadata.InstanceFactory?.Invoke()
+                ?? throw new InvalidOperationException(
+                    $"Instance factory is unavailable for tool '{metadata.FunctionName}'.");
+        }
+
+        var result = metadata.FastInvoke(instance, paramValues);
+        if (result is not Task task)
+        {
             return result;
         }
+
+        await task.WaitAsync(ct).ConfigureAwait(false);
+        return task.GetType().GetProperty("Result")?.GetValue(task);
     }
 }
