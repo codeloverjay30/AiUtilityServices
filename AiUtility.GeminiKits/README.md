@@ -67,3 +67,7 @@
 ## 5.5.0-preview-1.0.0
 ### Update
 + No update
+
+## 5.6.0-preview-1.0.0
+### Fix
++ fix `#12`

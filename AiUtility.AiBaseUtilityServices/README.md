@@ -63,3 +63,7 @@ Utility base class of API of AI model.
 ### Update
 + No update
 
+## 5.6.0-preview-1.0.0
+### Update
++ No update
+

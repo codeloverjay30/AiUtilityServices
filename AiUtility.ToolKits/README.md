@@ -53,3 +53,7 @@ Utility toolkit used for AI Agents.
 ## 5.5.0-preview-1.0.0
 ### Fixed
 + Fix `#19`
+
+## 5.6.0-preview-1.0.0
+### Update
++ No update
